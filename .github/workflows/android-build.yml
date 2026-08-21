@@ -1,0 +1,72 @@
+name: Android APK Build
+
+on:
+  push:
+    paths:
+      - 'MobileClient/**'
+      - '.github/workflows/android-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Build Silkroad Mobile APK
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Godot 4.4.1
+        uses: chickensoft/setup-godot-action@v1
+        with:
+          version: 4.4.1
+          use-dotnet: false
+          include-templates: true
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android platform and build tools
+        run: |
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          yes | sdkmanager --licenses >/dev/null || true
+
+      - name: Configure Android debug keystore
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Configure export keystore path
+        run: |
+          sed -i "s#keystore/debug=\"\"#keystore/debug=\"$HOME/.android/debug.keystore\"#" MobileClient/export_presets.cfg
+          sed -i 's#keystore/debug_user=\"\"#keystore/debug_user=\"androiddebugkey\"#' MobileClient/export_presets.cfg
+          sed -i 's#keystore/debug_password=\"\"#keystore/debug_password=\"android\"#' MobileClient/export_presets.cfg
+
+      - name: Import Godot project
+        working-directory: MobileClient
+        run: godot --headless --editor --quit --path .
+
+      - name: Export release APK
+        working-directory: MobileClient
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-debug "Android" build/SilkroadMobile.apk
+          test -s build/SilkroadMobile.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SilkroadMobile-debug-apk
+          path: MobileClient/build/SilkroadMobile.apk
+          if-no-files-found: error
+          retention-days: 14
