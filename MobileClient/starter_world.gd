@@ -48,6 +48,8 @@ func set_character(data: Dictionary) -> void:
         offline_level = int(data.get("level", offline_level))
         offline_exp = int(data.get("exp", offline_exp))
         offline_gold = int(data.get("gold", offline_gold))
+        if player:
+            player.configure_build(data)
         hud.set_stats(hp, mp, max(100, hp), max(100, mp))
         hud.set_exp(offline_exp, _exp_to_next(), offline_level)
         hud.set_offline_mode(offline_mode)
@@ -67,8 +69,17 @@ func _process(delta: float) -> void:
 func _build_environment() -> void:
     var world_environment := WorldEnvironment.new()
     var environment := Environment.new()
-    environment.background_mode = Environment.BG_COLOR
-    environment.background_color = Color("#16223a")
+    environment.background_mode = Environment.BG_SKY
+    var sky := Sky.new()
+    var sky_material := ProceduralSkyMaterial.new()
+    sky_material.sky_top_color = Color("#101b3a")
+    sky_material.sky_horizon_color = Color("#e2a56b")
+    sky_material.ground_bottom_color = Color("#151b2c")
+    sky_material.ground_horizon_color = Color("#6e5262")
+    sky_material.sun_angle_max = 18.0
+    sky_material.sun_curve = 0.08
+    sky.sky_material = sky_material
+    environment.sky = sky
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     environment.ambient_light_color = Color("#a9c9e5")
     environment.ambient_light_energy = 0.82
@@ -118,7 +129,7 @@ func _build_city() -> void:
     floor_mesh.size = Vector3(90, 0.25, 90)
     floor.mesh = floor_mesh
     floor.position.y = -0.16
-    floor.material_override = _material(Color("#b99468"), 0.0, 0.95)
+    floor.material_override = _ground_shader()
     ground.add_child(floor)
     var collider := CollisionShape3D.new()
     var shape := BoxShape3D.new()
@@ -133,14 +144,14 @@ func _build_city() -> void:
     road_mesh.size = Vector3(13, 0.03, 90)
     road.mesh = road_mesh
     road.position.y = 0.01
-    road.material_override = _material(Color("#6d5b55"), 0.0, 1.0)
+    road.material_override = _road_shader()
     add_child(road)
     var road_cross := MeshInstance3D.new()
     var cross_mesh := BoxMesh.new()
     cross_mesh.size = Vector3(90, 0.035, 10)
     road_cross.mesh = cross_mesh
     road_cross.position.y = 0.015
-    road_cross.material_override = _material(Color("#6d5b55"), 0.0, 1.0)
+    road_cross.material_override = _road_shader()
     add_child(road_cross)
 
     var water := MeshInstance3D.new()
@@ -148,7 +159,7 @@ func _build_city() -> void:
     water_mesh.size = Vector3(90, 0.05, 5.5)
     water.mesh = water_mesh
     water.position = Vector3(0, 0.08, -24)
-    water.material_override = _material(Color("#2c91ad"), 0.35, 0.15)
+    water.material_override = _water_shader()
     add_child(water)
 
     for x in [-18.0, 18.0]:
@@ -417,7 +428,19 @@ func _on_action(action: String) -> void:
     if hud:
         hud.set_status("Action: %s" % action.to_upper())
     if action == "attack":
-        CombatVFX.spawn_weapon_slash(self, player.global_position, player.rotation.y)
+        if selected_target_id == 0:
+            hud.set_status("Select a Mangyang first")
+            return
+        var target_position := player.global_position + Vector3(0, 0, -2.0)
+        if monsters.has(selected_target_id):
+            target_position = monsters[selected_target_id].global_position
+        player.play_attack()
+        if player.get_attack_style() == "wizard":
+            CombatVFX.spawn_magic_projectile(self, player.get_attack_origin(), target_position)
+            hud.set_status("Arcane bolt cast — ranged magic attack")
+        else:
+            CombatVFX.spawn_weapon_slash(self, player.global_position, player.rotation.y)
+            hud.set_status("Spear stance — close-range physical attack")
         if selected_target_id == 0:
             hud.set_status("Select a Mangyang first")
             return
@@ -434,7 +457,11 @@ func _apply_local_demo_attack() -> void:
     if not monsters.has(selected_target_id):
         return
     var monster: MonsterMob = monsters[selected_target_id]
-    var damage := randi_range(18, 32)
+    var style := player.get_attack_style()
+    if style == "spear" and player.global_position.distance_to(monster.global_position) > 4.2:
+        hud.set_status("Spear attack out of range — move closer")
+        return
+    var damage := randi_range(28, 46) if style == "wizard" else randi_range(18, 32)
     monster.apply_damage(damage)
     _show_damage(monster, damage)
     if monster.hp <= 0:
@@ -524,6 +551,56 @@ func _collect_nearest_drop() -> void:
         _on_drop_requested(nearest)
     else:
         hud.set_status("No loot nearby")
+
+func _ground_shader() -> ShaderMaterial:
+    return _pattern_shader(Color("#9c795f"), Color("#b99468"), 24.0, 0.035)
+
+func _road_shader() -> ShaderMaterial:
+    return _pattern_shader(Color("#4b3f4a"), Color("#6f5a55"), 10.0, 0.018)
+
+func _water_shader() -> ShaderMaterial:
+    var shader := Shader.new()
+    shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, cull_disabled;
+uniform vec4 deep_color : source_color = vec4(0.04, 0.26, 0.42, 1.0);
+uniform vec4 light_color : source_color = vec4(0.12, 0.55, 0.68, 1.0);
+void fragment() {
+    float wave = sin(UV.x * 48.0 + TIME * 1.8) * 0.08 + sin(UV.y * 31.0 - TIME * 1.3) * 0.06;
+    ALBEDO = mix(deep_color.rgb, light_color.rgb, clamp(UV.y + wave, 0.0, 1.0));
+    METALLIC = 0.15;
+    ROUGHNESS = 0.2;
+    EMISSION = light_color.rgb * 0.12;
+}
+"""
+    var material := ShaderMaterial.new()
+    material.shader = shader
+    return material
+
+func _pattern_shader(primary: Color, secondary: Color, frequency: float, line_width: float) -> ShaderMaterial:
+    var shader := Shader.new()
+    shader.code = """
+shader_type spatial;
+render_mode diffuse_burley;
+uniform vec4 primary : source_color;
+uniform vec4 secondary : source_color;
+uniform float frequency = 16.0;
+uniform float line_width = 0.03;
+void fragment() {
+    vec2 tiled = fract(UV * frequency);
+    float lines = step(tiled.x, line_width) + step(tiled.y, line_width);
+    float variation = 0.5 + 0.5 * sin(UV.x * 80.0) * sin(UV.y * 60.0);
+    ALBEDO = mix(primary.rgb, secondary.rgb, clamp(variation * 0.22 + lines * 0.18, 0.0, 1.0));
+    ROUGHNESS = 0.86;
+}
+"""
+    var material := ShaderMaterial.new()
+    material.shader = shader
+    material.set_shader_parameter("primary", primary)
+    material.set_shader_parameter("secondary", secondary)
+    material.set_shader_parameter("frequency", frequency)
+    material.set_shader_parameter("line_width", line_width)
+    return material
 
 func _material(color: Color, metallic: float, roughness: float) -> StandardMaterial3D:
     var material := StandardMaterial3D.new()

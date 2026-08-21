@@ -7,7 +7,9 @@ var input_vector := Vector2.ZERO
 var move_speed := 4.6
 var joystick: Control
 var camera_rig: SpringArm3D
-var visual: MeshInstance3D
+var visual
+var weapon_style := "spear"
+var build_id := "spear"
 var yaw := 0.0
 
 func _ready() -> void:
@@ -25,37 +27,9 @@ func _build_body() -> void:
     collider.position.y = 0.86
     add_child(collider)
 
-    visual = MeshInstance3D.new()
-    var mesh := CapsuleMesh.new()
-    mesh.radius = 0.38
-    mesh.height = 1.65
-    visual.mesh = mesh
-    visual.position.y = 0.86
-    var material := StandardMaterial3D.new()
-    material.albedo_color = Color("#d8a071")
-    material.roughness = 0.45
-    visual.material_override = material
+    visual = load("res://humanoid_model.gd").new()
+    visual.configure_build({"class_id": "spear", "race": "Chinese", "outfit": "Jade Armor"})
     add_child(visual)
-
-    var head := MeshInstance3D.new()
-    var head_mesh := SphereMesh.new()
-    head_mesh.radius = 0.3
-    head_mesh.height = 0.6
-    head.mesh = head_mesh
-    head.position = Vector3(0, 1.86, 0)
-    head.material_override = material
-    add_child(head)
-
-    var sash := MeshInstance3D.new()
-    var sash_mesh := BoxMesh.new()
-    sash_mesh.size = Vector3(0.78, 0.16, 0.78)
-    sash.mesh = sash_mesh
-    sash.position.y = 1.05
-    var sash_material := StandardMaterial3D.new()
-    sash_material.albedo_color = Color("#b54b4b")
-    sash_material.roughness = 0.7
-    sash.material_override = sash_material
-    add_child(sash)
 
 func _build_camera() -> void:
     camera_rig = SpringArm3D.new()
@@ -69,6 +43,23 @@ func _build_camera() -> void:
     camera.current = true
     camera.fov = 58.0
     camera_rig.add_child(camera)
+
+func configure_build(data: Dictionary) -> void:
+    build_id = str(data.get("class_id", data.get("build", "spear"))).to_lower()
+    weapon_style = "wizard" if build_id in ["wizard", "european_wizard", "staff"] else "spear"
+    if visual:
+        visual.configure_build(data)
+    move_speed = 4.2 if weapon_style == "wizard" else 4.6
+
+func get_attack_style() -> String:
+    return weapon_style
+
+func get_attack_origin() -> Vector3:
+    return global_position + Vector3(0, 1.35, -0.55).rotated(Vector3.UP, rotation.y)
+
+func play_attack() -> void:
+    if visual:
+        visual.play_attack()
 
 func set_joystick(value: Control) -> void:
     joystick = value
@@ -84,6 +75,8 @@ func _physics_process(_delta: float) -> void:
         input_vector = keyboard
     var direction := Vector3(input_vector.x, 0, input_vector.y)
     if direction.length() > 0.05:
+        if visual:
+            visual.set_animation_state("walk")
         direction = direction.normalized()
         velocity.x = direction.x * move_speed
         velocity.z = direction.z * move_speed
@@ -91,6 +84,8 @@ func _physics_process(_delta: float) -> void:
         rotation.y = yaw
         movement_changed.emit(global_position)
     else:
+        if visual:
+            visual.set_animation_state("idle")
         velocity.x = move_toward(velocity.x, 0, move_speed * 8.0 * _delta)
         velocity.z = move_toward(velocity.z, 0, move_speed * 8.0 * _delta)
     if not is_on_floor():

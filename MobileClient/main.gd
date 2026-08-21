@@ -14,6 +14,7 @@ var status_label: Label
 var result_label: Label
 var character_select: CharacterSelect
 var starter_world: StarterWorld
+var offline_mode := false
 
 func _ready() -> void:
     protocol = SROProtocol.new()
@@ -28,9 +29,7 @@ func _ready() -> void:
     protocol.stats_updated.connect(_on_stats_updated)
     protocol.world_ready.connect(_on_world_ready)
     _build_login_ui()
-    _on_status_changed("Ready. Connect to Gateway, or launch the complete local test world.")
-    if "--offline" in OS.get_cmdline_args():
-        call_deferred("_on_offline_pressed")
+    _on_status_changed("Select a character build to begin your journey, or connect to Gateway.")
 
 func _process(_delta: float) -> void:
     if protocol:
@@ -55,13 +54,13 @@ func _build_login_ui() -> void:
     content.add_theme_constant_override("separation", 16)
     margin.add_child(content)
     var title := Label.new()
-    title.text = "SILKROAD MOBILE  •  PHASE 2"
+    title.text = "SILKROAD MOBILE  •  CHARACTER SELECT"
     title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     title.add_theme_font_size_override("font_size", 30)
     title.add_theme_color_override("font_color", Color("#f2c66d"))
     content.add_child(title)
     var subtitle := Label.new()
-    subtitle.text = "Agent character selection and Jangan starter world"
+    subtitle.text = "Choose your build before entering the Jangan frontier"
     subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     subtitle.add_theme_font_size_override("font_size", 17)
     subtitle.add_theme_color_override("font_color", Color("#a9b7d1"))
@@ -132,26 +131,21 @@ func _add_number_field(parent: VBoxContainer, caption: String, value: float, min
     return spin
 
 func _on_offline_pressed() -> void:
+    offline_mode = true
     login_button.disabled = true
     offline_button.disabled = true
-    result_label.text = "OFFLINE TEST MODE"
+    result_label.text = "OFFLINE MODE — CHOOSE YOUR HERO"
     result_label.add_theme_color_override("font_color", Color("#ffd36e"))
-    _enter_world_offline()
+    _show_character_select(true)
+    character_select.set_status("Choose a name and build, then enter the frontier.")
 
-func _enter_world_offline() -> void:
+func _enter_world_offline(character_data: Dictionary) -> void:
     if starter_world:
         return
     starter_world = StarterWorld.new()
     starter_world.set_offline_mode(true)
     add_child(starter_world)
-    starter_world.set_character({
-        "name": "Offline Tester",
-        "hp": 100,
-        "mp": 100,
-        "level": 1,
-        "exp": 0,
-        "gold": 0
-    })
+    starter_world.set_character(character_data)
     login_layer.visible = false
 
 func _on_login_pressed() -> void:
@@ -172,7 +166,7 @@ func _on_agent_login_succeeded() -> void:
     result_label.text = "Agent authenticated. Loading character screen..."
     _show_character_select()
 
-func _show_character_select() -> void:
+func _show_character_select(for_offline: bool = false) -> void:
     if character_select:
         return
     character_select = CharacterSelect.new()
@@ -180,6 +174,7 @@ func _show_character_select() -> void:
     character_select.create_requested.connect(_on_create_requested)
     character_select.enter_requested.connect(_on_enter_requested)
     add_child(character_select)
+    character_select.set_offline_mode(for_offline)
     login_layer.visible = false
 
 func _on_character_list_received(characters: Array) -> void:
@@ -188,11 +183,17 @@ func _on_character_list_received(characters: Array) -> void:
     character_select.set_characters(characters)
 
 func _on_select_requested(slot: int) -> void:
+    if offline_mode:
+        if character_select:
+            character_select.set_status("Build selected. Confirm your name and press ENTER.")
+        return
     protocol.select_character(slot)
     if character_select:
         character_select.set_status("Selecting slot %d and waiting for Agent load data..." % (slot + 1))
 
 func _on_create_requested(char_name: String, model: int, scale: int, items: Array[int]) -> void:
+    if offline_mode:
+        return
     protocol.create_character(char_name, model, scale, items)
 
 func _on_character_create_result(success: bool, code: int) -> void:
@@ -208,6 +209,14 @@ func _on_character_loaded(data: Dictionary) -> void:
         character_select.set_status("Loaded %s. Press ENTER SELECTED CHARACTER to enter the world." % data.get("name", "Traveler"))
 
 func _on_enter_requested(_slot: int) -> void:
+    if offline_mode:
+        var character_data := character_select.get_offline_character()
+        if character_data.get("name", "").is_empty():
+            character_select.set_status("Enter a character name before continuing.")
+            return
+        character_select.set_status("Entering Jangan frontier as %s..." % character_data.get("name", "Hero"))
+        _enter_world_offline(character_data)
+        return
     protocol.enter_world()
     if character_select:
         character_select.set_status("Entering Jangan outskirts...")

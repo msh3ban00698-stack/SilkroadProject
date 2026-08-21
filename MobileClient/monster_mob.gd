@@ -11,7 +11,7 @@ var max_hp := 100
 var rarity := 0
 var selected := false
 var local_demo := false
-var body_visual: MeshInstance3D
+var body_visual
 var target_ring: MeshInstance3D
 var health_bar: ProgressBar
 var health_label: Label
@@ -58,64 +58,21 @@ func configure_demo(demo_id: int, position: Vector3) -> void:
 func _build_visual() -> void:
     var collider := CollisionShape3D.new()
     var shape := CapsuleShape3D.new()
-    shape.radius = 0.7
-    shape.height = 1.7
+    shape.radius = 0.72
+    shape.height = 1.9
     collider.shape = shape
     collider.position.y = 0.9
     add_child(collider)
 
-    body_visual = MeshInstance3D.new()
-    var body_mesh := CapsuleMesh.new()
-    body_mesh.radius = 0.64
-    body_mesh.height = 1.45
-    body_visual.mesh = body_mesh
-    body_visual.position.y = 0.82
-    body_visual.material_override = _material(Color("#b88153"), 0.0, 0.82)
+    body_visual = load("res://animal_mob_model.gd").new()
+    body_visual.configure_animal(rarity)
     add_child(body_visual)
 
-    var belly := MeshInstance3D.new()
-    var belly_mesh := SphereMesh.new()
-    belly_mesh.radius = 0.44
-    belly_mesh.height = 0.7
-    belly.mesh = belly_mesh
-    belly.position = Vector3(0, 0.84, -0.46)
-    belly.material_override = _material(Color("#e4c17d"), 0.0, 0.75)
-    add_child(belly)
-
-    var head := MeshInstance3D.new()
-    var head_mesh := SphereMesh.new()
-    head_mesh.radius = 0.54
-    head_mesh.height = 1.08
-    head.mesh = head_mesh
-    head.position = Vector3(0, 1.82, 0)
-    head.material_override = _material(Color("#c9915b"), 0.0, 0.8)
-    add_child(head)
-
-    for x in [-0.23, 0.23]:
-        var eye := MeshInstance3D.new()
-        var eye_mesh := SphereMesh.new()
-        eye_mesh.radius = 0.08
-        eye_mesh.height = 0.16
-        eye.mesh = eye_mesh
-        eye.position = Vector3(x, 1.88, -0.48)
-        eye.material_override = _material(Color("#ffdb68"), 0.1, 0.2)
-        add_child(eye)
-        var horn := MeshInstance3D.new()
-        var horn_mesh := CylinderMesh.new()
-        horn_mesh.bottom_radius = 0.12
-        horn_mesh.top_radius = 0.015
-        horn_mesh.height = 0.52
-        horn.mesh = horn_mesh
-        horn.position = Vector3(x * 1.7, 2.28, 0)
-        horn.rotation_degrees = Vector3(0, 0, -18.0 if x < 0 else 18.0)
-        horn.material_override = _material(Color("#ead9ae"), 0.0, 0.7)
-        add_child(horn)
-
     target_ring = MeshInstance3D.new()
-    var ring_mesh := CylinderMesh.new()
-    ring_mesh.top_radius = 0.92
-    ring_mesh.bottom_radius = 0.92
-    ring_mesh.height = 0.035
+    var ring_mesh := TorusMesh.new()
+    ring_mesh.inner_radius = 0.82
+    ring_mesh.outer_radius = 0.9
+    ring_mesh.rings = 32
     target_ring.mesh = ring_mesh
     target_ring.position.y = 0.04
     target_ring.material_override = _material(Color("#f2c66d"), 0.15, 0.22)
@@ -123,23 +80,23 @@ func _build_visual() -> void:
     add_child(target_ring)
 
     var bar_root := Control.new()
-    bar_root.position = Vector2(-70, -112)
-    bar_root.custom_minimum_size = Vector2(140, 38)
+    bar_root.position = Vector2(-78, -116)
+    bar_root.custom_minimum_size = Vector2(156, 42)
     bar_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
     add_child(bar_root)
     health_bar = ProgressBar.new()
     health_bar.max_value = max_hp
     health_bar.value = hp
     health_bar.show_percentage = false
-    health_bar.custom_minimum_size = Vector2(140, 16)
+    health_bar.custom_minimum_size = Vector2(156, 17)
     health_bar.add_theme_stylebox_override("background", _bar_style(Color("#2a1520")))
     health_bar.add_theme_stylebox_override("fill", _bar_style(Color("#d94f5c")))
     bar_root.add_child(health_bar)
     health_label = Label.new()
     health_label.text = monster_name
     health_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    health_label.position = Vector2(0, -23)
-    health_label.size = Vector2(140, 22)
+    health_label.position = Vector2(0, -25)
+    health_label.size = Vector2(156, 24)
     health_label.add_theme_font_size_override("font_size", 12)
     health_label.add_theme_color_override("font_color", Color("#f3d6a2"))
     bar_root.add_child(health_label)

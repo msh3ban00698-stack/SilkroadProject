@@ -9,19 +9,19 @@ const MODEL_IDS := [1907, 1908, 1473]
 const WEAPON_IDS := [3630, 3631, 3632]
 const OUTFIT_IDS := [1035, 1036, 1037]
 
-var preview_body: MeshInstance3D
-var preview_weapon: MeshInstance3D
-var preview_cloak: MeshInstance3D
+var preview_body
 var character_list: Array = []
 var list_box: VBoxContainer
 var name_edit: LineEdit
 var race_select: OptionButton
 var weapon_select: OptionButton
+var build_select: OptionButton
 var outfit_select: OptionButton
 var scale_slider: HSlider
 var status_label: Label
 var enter_button: Button
 var selected_slot := -1
+var offline_mode := false
 
 func _ready() -> void:
     _build_preview()
@@ -69,42 +69,10 @@ func _build_preview() -> void:
     floor.material_override = _material(Color("#26365a"), 0.15, 0.2)
     add_child(floor)
 
-    preview_body = MeshInstance3D.new()
-    var body_mesh := CapsuleMesh.new()
-    body_mesh.height = 1.8
-    body_mesh.radius = 0.48
-    preview_body.mesh = body_mesh
-    preview_body.position.y = 0.92
-    preview_body.material_override = _material(Color("#d89168"), 0.55, 0.25)
+    preview_body = load("res://humanoid_model.gd").new()
+    preview_body.configure_build({"class_id": "wizard", "race": "European", "outfit": "Arcane Regalia"})
+    preview_body.position.y = 0.02
     add_child(preview_body)
-
-    var head := MeshInstance3D.new()
-    var head_mesh := SphereMesh.new()
-    head_mesh.radius = 0.38
-    head_mesh.height = 0.76
-    head.mesh = head_mesh
-    head.position = Vector3(0, 2.05, 0)
-    head.material_override = _material(Color("#e6a47a"), 0.6, 0.2)
-    add_child(head)
-
-    preview_weapon = MeshInstance3D.new()
-    var blade := BoxMesh.new()
-    blade.size = Vector3(0.10, 1.6, 0.12)
-    preview_weapon.mesh = blade
-    preview_weapon.position = Vector3(0.72, 1.05, 0)
-    preview_weapon.rotation_degrees = Vector3(0, 0, -18)
-    preview_weapon.material_override = _material(Color("#d8e9ff"), 0.2, 0.75)
-    add_child(preview_weapon)
-
-    preview_cloak = MeshInstance3D.new()
-    var cloak := CylinderMesh.new()
-    cloak.top_radius = 0.54
-    cloak.bottom_radius = 0.72
-    cloak.height = 1.0
-    preview_cloak.mesh = cloak
-    preview_cloak.position = Vector3(0, 0.75, 0)
-    preview_cloak.material_override = _material(Color("#b5454d"), 0.7, 0.15)
-    add_child(preview_cloak)
 
 func _build_ui() -> void:
     var canvas := CanvasLayer.new()
@@ -143,7 +111,7 @@ func _build_ui() -> void:
     list_hint.add_theme_color_override("font_color", Color("#8d9bb8"))
     list_box.add_child(list_hint)
     enter_button = Button.new()
-    enter_button.text = "ENTER SELECTED CHARACTER"
+    enter_button.text = "ENTER SELECTED HERO"
     enter_button.disabled = true
     enter_button.custom_minimum_size = Vector2(0, 52)
     enter_button.pressed.connect(func():
@@ -164,10 +132,12 @@ func _build_ui() -> void:
     form_title.add_theme_font_size_override("font_size", 23)
     form_title.add_theme_color_override("font_color", Color("#f2c66d"))
     form.add_child(form_title)
-    name_edit = _field(form, "Character name", "Traveler")
-    race_select = _option(form, "Race / body", ["Chinese Warrior", "Chinese Rogue", "European Knight"])
-    weapon_select = _option(form, "Weapon", ["Blade", "Bow", "Spear"])
-    outfit_select = _option(form, "Clothing", ["Crimson Silk", "Azure Silk", "Jade Traveler"])
+    name_edit = _field(form, "Character name", "Aurelia")
+    build_select = _option(form, "Build", ["European Wizard", "Chinese Spear"])
+    build_select.item_selected.connect(_apply_build_selection)
+    race_select = _option(form, "Race / lineage", ["European", "Chinese"])
+    weapon_select = _option(form, "Weapon", ["Staff", "Spear"])
+    outfit_select = _option(form, "Clothing", ["Arcane Regalia", "Jade War Robe"])
     var scale_label := Label.new()
     scale_label.text = "Body scale"
     form.add_child(scale_label)
@@ -211,6 +181,54 @@ func _option(parent: VBoxContainer, label_text: String, values: Array[String]) -
     parent.add_child(option)
     return option
 
+func set_offline_mode(value: bool) -> void:
+    offline_mode = value
+    if not offline_mode:
+        return
+    if status_label:
+        status_label.text = "Offline roster: choose a build, customize the name, then enter the world."
+    _set_offline_profiles()
+    _apply_build_selection(build_select.selected)
+
+func _set_offline_profiles() -> void:
+    set_characters([
+        {"slot": 0, "name": "European Wizard", "level": 1},
+        {"slot": 1, "name": "Chinese Spear", "level": 1}
+    ])
+    _select_offline_slot(0)
+
+func _select_offline_slot(slot: int) -> void:
+    selected_slot = slot
+    enter_button.disabled = false
+    build_select.select(slot)
+    _apply_build_selection(slot)
+
+func _apply_build_selection(index: int) -> void:
+    if not build_select or not race_select or not weapon_select or not outfit_select:
+        return
+    var wizard := index == 0
+    race_select.select(0 if wizard else 1)
+    weapon_select.select(0 if wizard else 1)
+    outfit_select.select(0 if wizard else 1)
+    _refresh_preview()
+
+func get_offline_character() -> Dictionary:
+    var wizard := build_select.selected == 0
+    var char_name := name_edit.text.strip_edges()
+    return {
+        "name": char_name,
+        "class_id": "wizard" if wizard else "spear",
+        "build": "European Wizard" if wizard else "Chinese Spear",
+        "race": "European" if wizard else "Chinese",
+        "weapon": "Staff" if wizard else "Spear",
+        "outfit": "Arcane Regalia" if wizard else "Jade War Robe",
+        "hp": 86 if wizard else 120,
+        "mp": 160 if wizard else 82,
+        "level": 1,
+        "exp": 0,
+        "gold": 0
+    }
+
 func _on_create_pressed() -> void:
     var char_name := name_edit.text.strip_edges()
     if char_name.length() < 3 or char_name.length() > 12:
@@ -231,6 +249,8 @@ func set_characters(characters: Array) -> void:
         button.pressed.connect(func():
             selected_slot = character.slot
             enter_button.disabled = false
+            if offline_mode:
+                _select_offline_slot(character.slot)
             select_requested.emit(character.slot)
         )
         list_box.add_child(button)
@@ -247,13 +267,13 @@ func set_status(text: String) -> void:
 func _refresh_preview() -> void:
     if preview_body == null:
         return
-    var race_colors := [Color("#d89168"), Color("#7fc8b4"), Color("#c9b4df")]
-    var weapon_colors := [Color("#d8e9ff"), Color("#f3c75f"), Color("#d77951")]
-    var outfit_colors := [Color("#b5454d"), Color("#3676b9"), Color("#4f9b75")]
-    preview_body.material_override = _material(race_colors[race_select.selected], 0.55, 0.25)
-    preview_weapon.material_override = _material(weapon_colors[weapon_select.selected], 0.2, 0.75)
-    preview_cloak.material_override = _material(outfit_colors[outfit_select.selected], 0.7, 0.15)
-    preview_body.scale = Vector3(1.0, 0.85 + scale_slider.value / 100.0, 1.0)
+    var wizard := build_select.selected == 0
+    preview_body.configure_build({
+        "class_id": "wizard" if wizard else "spear",
+        "race": "European" if wizard else "Chinese",
+        "outfit": "Arcane Regalia" if wizard else "Jade War Robe"
+    })
+    preview_body.scale = Vector3.ONE * (0.92 + scale_slider.value / 260.0)
 
 func _material(color: Color, metallic: float, roughness: float) -> StandardMaterial3D:
     var material := StandardMaterial3D.new()

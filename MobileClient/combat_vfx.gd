@@ -28,6 +28,32 @@ static func spawn_weapon_slash(parent: Node3D, origin: Vector3, facing: float) -
     light_tween.tween_property(light, "light_energy", 0.0, 0.35)
     light_tween.finished.connect(effect.queue_free)
 
+static func spawn_magic_projectile(parent: Node3D, origin: Vector3, target: Vector3) -> void:
+    var effect := Node3D.new()
+    effect.name = "ArcaneBolt"
+    effect.position = origin
+    parent.add_child(effect)
+    var orb := MeshInstance3D.new()
+    var orb_mesh := SphereMesh.new()
+    orb_mesh.radius = 0.2
+    orb_mesh.height = 0.4
+    orb.mesh = orb_mesh
+    orb.material_override = _slash_material(Color("#8edbff"), 5.5)
+    effect.add_child(orb)
+    var light := OmniLight3D.new()
+    light.light_color = Color("#65cfff")
+    light.light_energy = 5.5
+    light.omni_range = 4.2
+    effect.add_child(light)
+    var distance := origin.distance_to(target)
+    var duration: float = clampf(distance / 11.0, 0.18, 0.72)
+    var tween := effect.create_tween()
+    tween.tween_property(effect, "global_position", target + Vector3(0, 1.0, 0), duration).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+    tween.finished.connect(func():
+        FloatingDamage.spawn_hit_effect(parent, target + Vector3(0, 1.0, 0))
+        effect.queue_free()
+    )
+
 static func spawn_death_effect(parent: Node3D, origin: Vector3) -> void:
     var effect := Node3D.new()
     effect.name = "MonsterDeathVFX"
