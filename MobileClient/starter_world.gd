@@ -48,27 +48,47 @@ func _build_environment() -> void:
     var world_environment := WorldEnvironment.new()
     var environment := Environment.new()
     environment.background_mode = Environment.BG_COLOR
-    environment.background_color = Color("#9fc7df")
+    environment.background_color = Color("#16223a")
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     environment.ambient_light_color = Color("#a9c9e5")
-    environment.ambient_light_energy = 0.72
+    environment.ambient_light_energy = 0.82
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+    environment.tonemap_exposure = 1.18
+    environment.tonemap_white = 1.35
     environment.glow_enabled = true
+    environment.glow_intensity = 1.35
+    environment.glow_strength = 1.25
+    environment.glow_bloom = 0.22
+    environment.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
+    environment.glow_hdr_threshold = 0.72
+    environment.glow_hdr_scale = 2.0
     world_environment.environment = environment
     add_child(world_environment)
 
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-52, -32, 0)
     sun.light_color = Color("#ffe2b5")
-    sun.light_energy = 1.15
+    sun.light_energy = 1.45
     sun.shadow_enabled = true
+    sun.directional_shadow_max_distance = 70.0
+    sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
+    sun.shadow_blur = 1.35
+    sun.light_angular_distance = 1.2
     add_child(sun)
 
     var moon_fill := DirectionalLight3D.new()
     moon_fill.rotation_degrees = Vector3(-20, 148, 0)
     moon_fill.light_color = Color("#75a9e8")
-    moon_fill.light_energy = 0.22
+    moon_fill.light_energy = 0.28
+    moon_fill.shadow_enabled = false
     add_child(moon_fill)
+
+    var golden_fill := OmniLight3D.new()
+    golden_fill.position = Vector3(0, 6, 8)
+    golden_fill.light_color = Color("#e7a85d")
+    golden_fill.light_energy = 1.1
+    golden_fill.omni_range = 18.0
+    add_child(golden_fill)
 
 func _build_city() -> void:
     var ground := StaticBody3D.new()
@@ -359,6 +379,7 @@ func _on_action(action: String) -> void:
     if hud:
         hud.set_status("Action: %s" % action.to_upper())
     if action == "attack":
+        CombatVFX.spawn_weapon_slash(self, player.global_position, player.rotation.y)
         if selected_target_id == 0:
             hud.set_status("Select a Mangyang first")
             return
@@ -392,7 +413,7 @@ func _on_action_result_received(result: Dictionary) -> void:
         _show_damage(monster, damage)
         hud.set_target_hp(monster.hp, monster.max_hp)
         if result.get("dead", false):
-            _kill_local_demo(monster)
+            _finish_monster(monster)
 
 func _show_damage(monster: MonsterMob, damage: int) -> void:
     if damage <= 0:
@@ -404,12 +425,23 @@ func _show_damage(monster: MonsterMob, damage: int) -> void:
     popup.show_damage(damage)
 
 func _kill_local_demo(monster: MonsterMob) -> void:
-    var drop_data := {"unique_id": monster.unique_id + 1000000, "model": 9001, "position": monster.global_position, "name": "Mangyang Hide"}
-    _spawn_drop(drop_data)
-    _on_entity_despawned(monster.unique_id)
+    _finish_monster(monster)
+
+func _finish_monster(monster: MonsterMob) -> void:
+    if monster.defeated:
+        return
+    var defeated_position := monster.global_position
+    monster.play_defeat()
+    CombatVFX.spawn_death_effect(self, defeated_position)
+    if monster.local_demo:
+        var drop_data := {"unique_id": monster.unique_id + 1000000, "model": 9001, "position": defeated_position, "name": "Mangyang Hide"}
+        _spawn_drop(drop_data)
     selected_target_id = 0
     hud.clear_target()
     hud.set_status("Mangyang defeated — loot dropped")
+    await get_tree().create_timer(0.82).timeout
+    if is_instance_valid(monster):
+        _on_entity_despawned(monster.unique_id)
 
 func _on_drop_requested(unique_id: int) -> void:
     if protocol:

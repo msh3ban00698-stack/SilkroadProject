@@ -23,3 +23,9 @@
 يظهر في عالم البداية وحشان Mangyang procedural عند عدم وصول Spawn من Agent، بينما الكيانات الشبكية التي تصل عبر `0x3015` أو `0x3019` تُدار في نفس المسار. انقر على الوحش لتحديده؛ ستظهر حلقة ذهبية وشريط HP في أعلى الشاشة. زر `ATTACK` يرسل `0x7074` مع معرف الهدف، وتعرض النتيجة أرقام ضرر طائرة ووميض ضربة. زر `PICKUP` يلتقط أقرب غنيمة ضمن خمسة أمتار، والنقر على الغنيمة نفسها يرسل طلب الالتقاط أيضًا. زر `BAG` يفتح واجهة الحقيبة التي تعرض العناصر بعد رد نجاح `0xB099`.
 
 الفرع الحالي يضيف معالجًا اختياريًا في `SR_GameServer/PacketProcessor.cs` للهجوم الأساسي والتقاط العناصر، مع تعريفات Opcode في `SCommon/Opcode.cs`. الهجوم يستخدم `TotalMinPhyAtk` للشخصية ويخفض HP الوحش ثم يرسل `0xB074`; الالتقاط يستخدم `_ADD_ITEM` أو تحديث الذهب ثم يرسل `0xB099`. يجب تشغيل نسخة Agent المبنية من هذا الفرع لاختبار المسارين الشبكيين؛ أما Mangyang المحلي فيختبر الواجهة والمؤثرات دون خادم.
+
+## Phase 4: Visual luxury and server build
+
+يستخدم `starter_world.gd` الآن `WorldEnvironment` بإعدادات HDR Filmic وBloom/Glow، مع DirectionalLight3D بظلال متعددة التقسيمات وsoft shadow blur، وإضاءة ذهبية محيطية حول منطقة اللعب. يضيف `combat_vfx.gd` مسار Slash Trail ذهبيًا عند زر الهجوم وتأثير موت سحريًا بحلقات متلاشية، بينما يعرض `floating_damage.gd` أرقامًا أكبر بخط واضح وoutline داكن وحركة صعودية مع Fade out.
+
+أصبح `MobileHUD` بطابع Dark & Gold مع حدود ذهبية وحالات hover/pressed للأزرار وأشرطة HP/MP وهدف الوحش. يبني `.github/workflows/android-build.yml` APK كالعادة، بينما يبني `.github/workflows/windows-server-build.yml` مشروعي `GatewayServer` و`SR_GameServer` عبر MSBuild على `windows-latest` ويرفع مجلد binaries باسم `SilkroadServer-Compiled`. الـArtifact مخصص للتشغيل على Windows/VPS Windows؛ لا يحتوي إعدادات قاعدة البيانات أو ملفات العالم السرية، ويجب ضبطها قبل التشغيل.

@@ -1,0 +1,89 @@
+name: Windows Server Build
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'SR_GameServer/**'
+      - 'GatewayServer/**'
+      - 'SCommon/**'
+      - 'SCore/**'
+      - '*.dll'
+      - '.github/workflows/windows-server-build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-server:
+    name: Build C# server binaries
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x86
+
+      - name: Prepare output and native dependencies
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\server-dist\GatewayServer" | Out-Null
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\server-dist\SR_GameServer" | Out-Null
+          $required = @('SCore.dll', 'SharpDX.dll', 'clipper_library.dll')
+          foreach ($file in $required) {
+            if (-not (Test-Path "$env:GITHUB_WORKSPACE\$file")) {
+              throw "Required dependency is missing: $file"
+            }
+            Copy-Item "$env:GITHUB_WORKSPACE\$file" "$env:GITHUB_WORKSPACE\server-dist\$file" -Force
+          }
+
+      - name: Build GatewayServer
+        shell: pwsh
+        run: |
+          msbuild "$env:GITHUB_WORKSPACE\GatewayServer\GatewayServer.csproj" `
+            /t:Rebuild /m `
+            /p:Configuration=Release `
+            /p:Platform=x86 `
+            /p:BuildProjectReferences=false `
+            /p:ReferencePath="$env:GITHUB_WORKSPACE" `
+            /p:OutputPath="$env:GITHUB_WORKSPACE\server-dist\GatewayServer\" `
+            /p:OutDir="$env:GITHUB_WORKSPACE\server-dist\GatewayServer\"
+
+      - name: Build SR_GameServer
+        shell: pwsh
+        run: |
+          msbuild "$env:GITHUB_WORKSPACE\SR_GameServer\SR_GameServer.csproj" `
+            /t:Rebuild /m `
+            /p:Configuration=Release `
+            /p:Platform=x86 `
+            /p:BuildProjectReferences=false `
+            /p:ReferencePath="$env:GITHUB_WORKSPACE" `
+            /p:OutputPath="$env:GITHUB_WORKSPACE\server-dist\SR_GameServer\" `
+            /p:OutDir="$env:GITHUB_WORKSPACE\server-dist\SR_GameServer\"
+
+      - name: Copy runtime configuration and verify binaries
+        shell: pwsh
+        run: |
+          Copy-Item "$env:GITHUB_WORKSPACE\GatewayServer\App.config" "$env:GITHUB_WORKSPACE\server-dist\GatewayServer\GatewayServer.exe.config" -Force
+          Copy-Item "$env:GITHUB_WORKSPACE\SR_GameServer\App.config" "$env:GITHUB_WORKSPACE\server-dist\SR_GameServer\SR_GameServer.exe.config" -Force
+          $binaries = Get-ChildItem "$env:GITHUB_WORKSPACE\server-dist" -Recurse -Include *.exe,*.dll
+          if (-not ($binaries | Where-Object { $_.Name -eq 'GatewayServer.exe' })) {
+            throw 'GatewayServer.exe was not produced'
+          }
+          if (-not ($binaries | Where-Object { $_.Name -eq 'SR_GameServer.exe' })) {
+            throw 'SR_GameServer.exe was not produced'
+          }
+          $binaries | Select-Object FullName,Length | Format-Table -AutoSize
+
+      - name: Upload compiled server
+        uses: actions/upload-artifact@v4
+        with:
+          name: SilkroadServer-Compiled
+          path: server-dist/
+          if-no-files-found: error
+          retention-days: 14

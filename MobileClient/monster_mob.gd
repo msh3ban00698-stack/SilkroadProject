@@ -18,6 +18,7 @@ var health_label: Label
 var destination := Vector3.ZERO
 var moving := false
 var move_tween: Tween
+var defeated := false
 
 func _ready() -> void:
     input_ray_pickable = true
@@ -138,6 +139,18 @@ func _build_visual() -> void:
     health_label.add_theme_font_size_override("font_size", 12)
     health_label.add_theme_color_override("font_color", Color("#f3d6a2"))
     bar_root.add_child(health_label)
+
+func play_defeat() -> void:
+    if defeated:
+        return
+    defeated = true
+    input_ray_pickable = false
+    if move_tween:
+        move_tween.kill()
+    var tween := create_tween().set_parallel(true)
+    tween.tween_property(self, "scale", Vector3(0.18, 0.08, 0.18), 0.78).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+    tween.tween_property(self, "rotation:y", rotation.y + PI * 1.8, 0.78).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+    tween.tween_property(target_ring, "scale", Vector3.ONE * 2.4, 0.5)
 
 func set_targeted(value: bool) -> void:
     selected = value

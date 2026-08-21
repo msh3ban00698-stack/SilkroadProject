@@ -32,7 +32,9 @@ func _build_hud() -> void:
     var title := Label.new()
     title.text = "JANGAN OUTSKIRTS"
     title.add_theme_font_size_override("font_size", 19)
-    title.add_theme_color_override("font_color", Color("#f2c66d"))
+    title.add_theme_color_override("font_color", Color("#f6d78b"))
+    title.add_theme_constant_override("outline_size", 8)
+    title.add_theme_color_override("font_outline_color", Color("#2a1c32"))
     top.add_child(title)
     hp_bar = _bar(top, Color("#d94f5c"))
     hp_label = Label.new()
@@ -84,7 +86,7 @@ func _build_hud() -> void:
     status_label.position = Vector2(24, -78)
     status_label.anchor_top = 1.0
     status_label.anchor_bottom = 1.0
-    status_label.add_theme_color_override("font_color", Color("#c8d7ee"))
+    status_label.add_theme_color_override("font_color", Color("#e7c778"))
     status_label.add_theme_font_size_override("font_size", 15)
     root.add_child(status_label)
 
@@ -100,7 +102,7 @@ func _build_target_panel(root: Control) -> void:
     target_label = Label.new()
     target_label.text = "NO TARGET"
     target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    target_label.add_theme_color_override("font_color", Color("#f2c66d"))
+    target_label.add_theme_color_override("font_color", Color("#f6d78b"))
     target_panel.add_child(target_label)
     target_bar = ProgressBar.new()
     target_bar.max_value = 100
@@ -124,11 +126,21 @@ func _bar(parent: VBoxContainer, color: Color) -> ProgressBar:
     bar.custom_minimum_size = Vector2(300, 30)
     bar.show_percentage = false
     var background := StyleBoxFlat.new()
-    background.bg_color = Color("#1c2740")
-    background.set_corner_radius_all(8)
+    background.bg_color = Color("#101625")
+    background.border_width_left = 2
+    background.border_width_top = 2
+    background.border_width_right = 2
+    background.border_width_bottom = 2
+    background.border_color = Color("#80643b")
+    background.set_corner_radius_all(9)
     var fill := StyleBoxFlat.new()
     fill.bg_color = color
-    fill.set_corner_radius_all(8)
+    fill.border_width_left = 1
+    fill.border_width_top = 1
+    fill.border_width_right = 1
+    fill.border_width_bottom = 1
+    fill.border_color = Color("#f0cc78")
+    fill.set_corner_radius_all(9)
     bar.add_theme_stylebox_override("background", background)
     bar.add_theme_stylebox_override("fill", fill)
     parent.add_child(bar)
@@ -141,8 +153,23 @@ func _action_button(parent: HBoxContainer, text: String, action: String, color: 
     button.add_theme_font_size_override("font_size", 13)
     var normal := StyleBoxFlat.new()
     normal.bg_color = color
+    normal.border_width_left = 2
+    normal.border_width_top = 2
+    normal.border_width_right = 2
+    normal.border_width_bottom = 2
+    normal.border_color = Color("#f1cf7a")
     normal.set_corner_radius_all(41)
+    var hover := normal.duplicate()
+    hover.bg_color = color.lightened(0.16)
+    hover.border_color = Color("#fff0bd")
+    var pressed := normal.duplicate()
+    pressed.bg_color = color.darkened(0.18)
+    pressed.border_color = Color("#b98b42")
     button.add_theme_stylebox_override("normal", normal)
+    button.add_theme_stylebox_override("hover", hover)
+    button.add_theme_stylebox_override("pressed", pressed)
+    button.add_theme_color_override("font_color", Color("#fff1c9"))
+    button.add_theme_color_override("font_hover_color", Color("#ffffff"))
     button.pressed.connect(func():
         if action == "bag":
             inventory_requested.emit()

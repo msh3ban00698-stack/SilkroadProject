@@ -4,15 +4,17 @@ extends Node3D
 func show_damage(amount: int, critical: bool = false) -> void:
     var label := Label3D.new()
     label.text = "-%d" % amount
-    label.font_size = 58 if critical else 46
-    label.outline_size = 12
+    label.font_size = 64 if critical else 52
+    label.outline_size = 16
     label.modulate = Color("#ffe27e") if critical else Color("#ff8f76")
+    label.outline_modulate = Color("#24152a")
     label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+    label.no_depth_test = true
     add_child(label)
     var start := global_position
     var tween := create_tween().set_parallel(true)
     tween.tween_property(self, "global_position", start + Vector3(0, 1.8, 0), 0.9).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-    tween.tween_property(label, "modulate:a", 0.0, 0.9).set_delay(0.35)
+    tween.tween_property(label, "modulate:a", 0.0, 0.9).set_delay(0.3).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
     tween.finished.connect(queue_free)
 
 static func spawn_hit_effect(parent: Node3D, position: Vector3) -> void:
@@ -33,7 +35,7 @@ static func spawn_hit_effect(parent: Node3D, position: Vector3) -> void:
     var tween := parent.create_tween().set_parallel(true)
     tween.tween_property(flash, "light_energy", 0.0, 0.28)
     tween.tween_property(pulse, "scale", Vector3.ONE * 4.0, 0.28)
-    tween.tween_property(pulse, "transparency", 1.0, 0.28)
+    tween.tween_property(pulse, "material_override:albedo_color:a", 0.0, 0.28)
     tween.finished.connect(func():
         flash.queue_free()
         pulse.queue_free()
@@ -45,4 +47,6 @@ static func _effect_material() -> StandardMaterial3D:
     material.emission_enabled = true
     material.emission = Color("#ff7a45")
     material.emission_energy_multiplier = 4.0
+    material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
     return material
