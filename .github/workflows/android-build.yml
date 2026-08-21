@@ -83,8 +83,7 @@ jobs:
           test -s "$template_dir/android_release.apk"
           test -s "$template_dir/android_source.zip"
           rm -rf MobileClient/android
-          mkdir -p MobileClient/android
-          unzip -q -o "$template_dir/android_source.zip" -d MobileClient/android
+          unzip -q -o "$template_dir/android_source.zip" -d MobileClient
 
       - name: Export release APK
         working-directory: MobileClient
