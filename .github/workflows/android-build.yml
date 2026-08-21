@@ -83,7 +83,9 @@ jobs:
           test -s "$template_dir/android_release.apk"
           test -s "$template_dir/android_source.zip"
           rm -rf MobileClient/android
-          unzip -q -o "$template_dir/android_source.zip" -d MobileClient
+          mkdir -p MobileClient/android/build
+          unzip -q -o "$template_dir/android_source.zip" -d MobileClient/android/build
+          printf '4.4.1.stable\n' > MobileClient/android/.build_version
 
       - name: Export release APK
         working-directory: MobileClient
