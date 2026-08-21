@@ -56,6 +56,8 @@
             public const ushort CHARACTER_ENTERWORLD = 0x3012;
             public const ushort GAMEOBJECT_MOVEMENT = 0x7021;
             public const ushort GAMEOBJECT_STOP = 0x7023;
+            public const ushort ACTION = 0x7074;
+            public const ushort PICKUP_ITEM = 0x7099;
             public const ushort GAMEOBJECT_SET_ANGLE = 0x7024;
             public const ushort SELECT_GAMEOBJECT = 0x7045;
             public const ushort TELEPORT = 0x705A;
@@ -80,6 +82,8 @@
             public const ushort CHAT = 0xB025;
             public const ushort INVENTORY_OPERATION = 0xB034;
             public const ushort UPDATE_INVENTORY_SLOT = 0xB04C;
+            public const ushort ACTION_RESULT = 0xB074;
+            public const ushort PICKUP_ITEM = 0xB099;
             public const ushort SHOP_OPEN = 0xB046;
             public const ushort SHOP_CLOSE = 0xB04B;
             public const ushort TELEPORT_APPOINT = 0xB059;

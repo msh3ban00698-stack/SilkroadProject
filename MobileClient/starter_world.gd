@@ -6,15 +6,26 @@ var player: MobilePlayer
 var hud: MobileHUD
 var movement_cooldown := 0.0
 var character_data: Dictionary = {}
+var monsters: Dictionary = {}
+var drops: Dictionary = {}
+var selected_target_id := 0
+var inventory_ui: InventoryUI
 
 func _ready() -> void:
     _build_environment()
     _build_city()
     _spawn_player()
     _spawn_hud()
+    _spawn_demo_monsters()
 
 func set_protocol(value: SROProtocol) -> void:
     protocol = value
+    protocol.entity_spawned.connect(_on_entity_spawned)
+    protocol.entity_despawned.connect(_on_entity_despawned)
+    protocol.entity_moved.connect(_on_entity_moved)
+    protocol.target_info_received.connect(_on_target_info_received)
+    protocol.action_result_received.connect(_on_action_result_received)
+    protocol.item_picked_up.connect(_on_item_picked_up)
 
 func set_character(data: Dictionary) -> void:
     character_data = data
@@ -270,12 +281,171 @@ func _spawn_hud() -> void:
     add_child(hud)
     player.set_joystick(hud.joystick)
     hud.action_requested.connect(_on_action)
+    inventory_ui = InventoryUI.new()
+    hud.add_child(inventory_ui)
+    hud.inventory_requested.connect(func(): inventory_ui.visible = not inventory_ui.visible)
+
+func _spawn_demo_monsters() -> void:
+    _spawn_monster({"unique_id": 900001, "model": 1, "kind": "monster", "name": "Mangyang Scout", "position": Vector3(-3, 0, -2), "hp": 120, "max_hp": 120, "rarity": 0}, true)
+    _spawn_monster({"unique_id": 900002, "model": 1, "kind": "monster", "name": "Mangyang Scout", "position": Vector3(4, 0, -6), "hp": 120, "max_hp": 120, "rarity": 1}, true)
+
+func _spawn_monster(data: Dictionary, demo: bool = false) -> void:
+    var uid := int(data.get("unique_id", 0))
+    if monsters.has(uid):
+        return
+    var monster := MonsterMob.new()
+    monster.configure(data)
+    if demo:
+        monster.configure_demo(uid, data.get("position", Vector3.ZERO))
+    monster.targeted.connect(_on_monster_targeted)
+    monsters[uid] = monster
+    add_child(monster)
+    if selected_target_id == 0 and demo:
+        _on_monster_targeted(uid)
+
+func _spawn_drop(data: Dictionary) -> void:
+    var uid := int(data.get("unique_id", 0))
+    if drops.has(uid):
+        return
+    var drop := DropItem3D.new()
+    drop.configure(data)
+    drop.pickup_requested.connect(_on_drop_requested)
+    drops[uid] = drop
+    add_child(drop)
+
+func _on_entity_spawned(entity: Dictionary) -> void:
+    if entity.get("kind", "monster") == "item":
+        _spawn_drop(entity)
+    else:
+        _spawn_monster(entity)
+
+func _on_entity_despawned(unique_id: int) -> void:
+    if monsters.has(unique_id):
+        monsters[unique_id].queue_free()
+        monsters.erase(unique_id)
+    if drops.has(unique_id):
+        drops[unique_id].queue_free()
+        drops.erase(unique_id)
+    if selected_target_id == unique_id:
+        selected_target_id = 0
+        hud.clear_target()
+
+func _on_entity_moved(unique_id: int, movement: Dictionary) -> void:
+    if monsters.has(unique_id):
+        monsters[unique_id].apply_movement(movement)
+
+func _on_monster_targeted(unique_id: int) -> void:
+    if selected_target_id != 0 and monsters.has(selected_target_id):
+        monsters[selected_target_id].set_targeted(false)
+    selected_target_id = unique_id
+    if monsters.has(unique_id):
+        var monster: MonsterMob = monsters[unique_id]
+        monster.set_targeted(true)
+        hud.set_target(monster.monster_name, monster.hp, monster.max_hp)
+        if protocol:
+            protocol.select_entity(unique_id)
+        hud.set_status("Target locked: %s" % monster.monster_name)
+
+func _on_target_info_received(target: Dictionary) -> void:
+    if not target.get("accepted", false):
+        hud.clear_target()
+        return
+    if monsters.has(int(target.unique_id)):
+        var monster: MonsterMob = monsters[int(target.unique_id)]
+        monster.set_hp(int(target.hp), int(target.max_hp))
+        hud.set_target(monster.monster_name, monster.hp, monster.max_hp)
 
 func _on_action(action: String) -> void:
     if hud:
         hud.set_status("Action: %s" % action.to_upper())
-    if action == "attack" and protocol:
-        protocol.send_stop(player.rotation.y)
+    if action == "attack":
+        if selected_target_id == 0:
+            hud.set_status("Select a Mangyang first")
+            return
+        if protocol:
+            protocol.attack_target(selected_target_id)
+        if monsters.has(selected_target_id) and monsters[selected_target_id].local_demo:
+            _apply_local_demo_attack()
+    elif action == "pickup":
+        _collect_nearest_drop()
+    elif action == "potion":
+        hud.set_status("Potion ready — inventory consumables are server-driven")
+
+func _apply_local_demo_attack() -> void:
+    if not monsters.has(selected_target_id):
+        return
+    var monster: MonsterMob = monsters[selected_target_id]
+    var damage := randi_range(18, 32)
+    monster.apply_damage(damage)
+    _show_damage(monster, damage)
+    if monster.hp <= 0:
+        _kill_local_demo(monster)
+    else:
+        hud.set_target_hp(monster.hp, monster.max_hp)
+
+func _on_action_result_received(result: Dictionary) -> void:
+    var uid := int(result.get("target_id", 0))
+    if monsters.has(uid):
+        var monster: MonsterMob = monsters[uid]
+        var damage := int(result.get("damage", 0))
+        monster.set_hp(int(result.get("hp", monster.hp)), monster.max_hp)
+        _show_damage(monster, damage)
+        hud.set_target_hp(monster.hp, monster.max_hp)
+        if result.get("dead", false):
+            _kill_local_demo(monster)
+
+func _show_damage(monster: MonsterMob, damage: int) -> void:
+    if damage <= 0:
+        return
+    FloatingDamage.spawn_hit_effect(self, monster.global_position)
+    var popup := FloatingDamage.new()
+    popup.position = monster.global_position + Vector3(0, 1.8, 0)
+    add_child(popup)
+    popup.show_damage(damage)
+
+func _kill_local_demo(monster: MonsterMob) -> void:
+    var drop_data := {"unique_id": monster.unique_id + 1000000, "model": 9001, "position": monster.global_position, "name": "Mangyang Hide"}
+    _spawn_drop(drop_data)
+    _on_entity_despawned(monster.unique_id)
+    selected_target_id = 0
+    hud.clear_target()
+    hud.set_status("Mangyang defeated — loot dropped")
+
+func _on_drop_requested(unique_id: int) -> void:
+    if protocol:
+        protocol.pickup_item(unique_id)
+    if drops.has(unique_id) and int(unique_id) >= 1000000:
+        var drop: DropItem3D = drops[unique_id]
+        inventory_ui.add_item(drop.item_id, drop.item_name)
+        drop.queue_free()
+        drops.erase(unique_id)
+        hud.set_status("Picked up %s" % drop.item_name)
+
+func _on_item_picked_up(result: Dictionary) -> void:
+    var uid := int(result.get("unique_id", 0))
+    if not result.get("success", false):
+        hud.set_status("Server rejected pickup")
+        return
+    if drops.has(uid):
+        var drop: DropItem3D = drops[uid]
+        inventory_ui.add_item(int(result.get("item_id", drop.item_id)), drop.item_name)
+        drop.queue_free()
+        drops.erase(uid)
+        hud.set_status("Picked up %s" % drop.item_name)
+
+func _collect_nearest_drop() -> void:
+    var nearest := -1
+    var distance := 9999.0
+    for uid in drops:
+        var drop: DropItem3D = drops[uid]
+        var current := player.global_position.distance_to(drop.global_position)
+        if current < distance:
+            distance = current
+            nearest = int(uid)
+    if nearest >= 0 and distance < 5.0:
+        _on_drop_requested(nearest)
+    else:
+        hud.set_status("No loot nearby")
 
 func _material(color: Color, metallic: float, roughness: float) -> StandardMaterial3D:
     var material := StandardMaterial3D.new()

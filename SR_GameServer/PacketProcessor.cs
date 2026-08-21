@@ -46,6 +46,8 @@
             s_OpcodeMap[Opcode.Agent.Request.CHARACTER_ENTERWORLD] = CharacterEnterWorld;
             s_OpcodeMap[Opcode.Agent.Request.GAMEOBJECT_MOVEMENT] = CharacterMove;
             s_OpcodeMap[Opcode.Agent.Request.GAMEOBJECT_STOP] = CharacterStop;
+            s_OpcodeMap[Opcode.Agent.Request.ACTION] = Action;
+            s_OpcodeMap[Opcode.Agent.Request.PICKUP_ITEM] = PickupItem;
             s_OpcodeMap[Opcode.Agent.Request.GAMEOBJECT_SET_ANGLE] = CharacterSetAngle;
             s_OpcodeMap[Opcode.Agent.GAMEOBJECT_EMOTE] = GObjEmote;
             s_OpcodeMap[Opcode.Agent.Request.SELECT_GAMEOBJECT] = SelectGObj;
@@ -419,6 +421,110 @@
                 return true;
             }
             return false;
+        }
+
+        private static bool Action(ClientContext Me, Packet pkt)
+        {
+            if (Me.Character == null || !Me.Character.m_isIngame)
+                return false;
+
+            int targetId = pkt.ReadInt32();
+            int skillId = pkt.ReadInt32();
+            GObj target = null;
+            lock (Me.Character.m_lock)
+            {
+                var visible = Me.Character.m_inSightGObjList.FirstOrDefault(p => p.Object != null && p.Object.m_uniqueId == targetId && p.Seen);
+                if (visible.Object != null && visible.Object.IsMonster)
+                    target = visible.Object;
+            }
+
+            Packet result = new Packet(Opcode.Agent.Response.ACTION_RESULT);
+            result.WriteInt32(targetId);
+            result.WriteInt32(skillId);
+            var mob = target as GObjMob;
+            if (mob != null && mob.m_lifeState == LifeState.Alive)
+            {
+                int damage = Math.Max(1, (int)Me.Character.TotalMinPhyAtk);
+                int hp = Interlocked.Add(ref mob.m_currentHealthPoints, -damage);
+                bool dead = hp <= 0;
+                if (dead)
+                {
+                    Interlocked.Exchange(ref mob.m_currentHealthPoints, 0);
+                    mob.m_lifeState = LifeState.Dead;
+                    mob.Disappear();
+                }
+                result.WriteByte(1);
+                result.WriteInt32(damage);
+                result.WriteInt32(Math.Max(0, hp));
+                result.WriteByte(dead ? 1 : 0);
+            }
+            else
+            {
+                result.WriteByte(0);
+                result.WriteInt32(0);
+                result.WriteInt32(0);
+                result.WriteByte(0);
+            }
+            Me.SocketContext.Send(result);
+            return true;
+        }
+
+        private static bool PickupItem(ClientContext Me, Packet pkt)
+        {
+            if (Me.Character == null || !Me.Character.m_isIngame)
+                return false;
+
+            int uniqueId = pkt.ReadInt32();
+            GObjItem item = null;
+            lock (Me.Character.m_lock)
+            {
+                var visible = Me.Character.m_inSightGObjList.FirstOrDefault(p => p.Object != null && p.Object.m_uniqueId == uniqueId && p.Seen);
+                var worldItem = visible.Object as GObjItem;
+                if (worldItem != null)
+                    item = worldItem;
+            }
+
+            Packet result = new Packet(Opcode.Agent.Response.PICKUP_ITEM);
+            result.WriteInt32(uniqueId);
+            if (item == null)
+            {
+                result.WriteByte(0);
+                Me.SocketContext.Send(result);
+                return true;
+            }
+
+            int refItemId = item.m_model;
+            bool success = false;
+            if (item.IsGold)
+            {
+                Packet goldPacket;
+                Me.Character.UpdateGold(item.m_data, out goldPacket);
+                Me.SocketContext.Send(goldPacket);
+                success = true;
+            }
+            else
+            {
+                int slot = Data.Globals.ShardDB.Result<int>("SELECT ISNULL(MAX(Slot), 12) + 1 FROM _Inventory WHERE CharID = {0}", Me.Character.m_charId);
+                if (slot >= 13 && slot < 109)
+                {
+                    int added = Data.Globals.ShardDB.Result<int>("EXEC _ADD_ITEM {0}, {1}, {2}, {3}, {4}", Me.Character.m_charId, slot, refItemId, item.m_optLevel, item.m_data);
+                    success = added == 1;
+                }
+            }
+
+            if (success)
+            {
+                item.Disappear();
+                result.WriteByte(1);
+                result.WriteInt32(refItemId);
+            }
+            else
+            {
+                result.WriteByte(0);
+                result.WriteInt32(0);
+            }
+            Me.SocketContext.Send(result);
+            return true;
         }
 
         private static bool SelectGObj(ClientContext Me, Packet pkt)

@@ -2,6 +2,7 @@ class_name MobileHUD
 extends CanvasLayer
 
 signal action_requested(action: String)
+signal inventory_requested()
 
 var hp_bar: ProgressBar
 var mp_bar: ProgressBar
@@ -10,6 +11,9 @@ var mp_label: Label
 var minimap: MinimapView
 var joystick: VirtualJoystick
 var status_label: Label
+var target_panel: VBoxContainer
+var target_bar: ProgressBar
+var target_label: Label
 
 func _ready() -> void:
     layer = 20
@@ -44,8 +48,9 @@ func _build_hud() -> void:
     mp_label.add_theme_font_size_override("font_size", 13)
     mp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     mp_bar.add_child(mp_label)
+    _build_target_panel(root)
 
-    minimap = MinimapView.new()
+    var minimap := MinimapView.new()
     minimap.position = Vector2(-8, 18)
     minimap.anchor_left = 1.0
     minimap.anchor_right = 1.0
@@ -62,7 +67,7 @@ func _build_hud() -> void:
     root.add_child(joystick)
 
     var actions := HBoxContainer.new()
-    actions.position = Vector2(-270, -190)
+    actions.position = Vector2(-480, -190)
     actions.anchor_left = 1.0
     actions.anchor_right = 1.0
     actions.anchor_top = 1.0
@@ -72,6 +77,8 @@ func _build_hud() -> void:
     _action_button(actions, "ATTACK", "attack", Color("#c95a4d"))
     _action_button(actions, "POTION", "potion", Color("#4fa97c"))
     _action_button(actions, "SKILL", "skill", Color("#a765c9"))
+    _action_button(actions, "PICKUP", "pickup", Color("#b58a47"))
+    _action_button(actions, "BAG", "bag", Color("#527aa9"))
 
     status_label = Label.new()
     status_label.position = Vector2(24, -78)
@@ -80,6 +87,35 @@ func _build_hud() -> void:
     status_label.add_theme_color_override("font_color", Color("#c8d7ee"))
     status_label.add_theme_font_size_override("font_size", 15)
     root.add_child(status_label)
+
+func _build_target_panel(root: Control) -> void:
+    target_panel = VBoxContainer.new()
+    target_panel.position = Vector2(0, 26)
+    target_panel.anchor_left = 0.5
+    target_panel.anchor_right = 0.5
+    target_panel.offset_left = -130
+    target_panel.offset_right = 130
+    target_panel.add_theme_constant_override("separation", 5)
+    root.add_child(target_panel)
+    target_label = Label.new()
+    target_label.text = "NO TARGET"
+    target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+    target_label.add_theme_color_override("font_color", Color("#f2c66d"))
+    target_panel.add_child(target_label)
+    target_bar = ProgressBar.new()
+    target_bar.max_value = 100
+    target_bar.value = 0
+    target_bar.show_percentage = false
+    target_bar.custom_minimum_size = Vector2(260, 20)
+    target_bar.add_theme_stylebox_override("background", _bar_style(Color("#261521")))
+    target_bar.add_theme_stylebox_override("fill", _bar_style(Color("#d94f5c")))
+    target_panel.add_child(target_bar)
+
+func _bar_style(color: Color) -> StyleBoxFlat:
+    var style := StyleBoxFlat.new()
+    style.bg_color = color
+    style.set_corner_radius_all(8)
+    return style
 
 func _bar(parent: VBoxContainer, color: Color) -> ProgressBar:
     var bar := ProgressBar.new()
@@ -107,7 +143,12 @@ func _action_button(parent: HBoxContainer, text: String, action: String, color: 
     normal.bg_color = color
     normal.set_corner_radius_all(41)
     button.add_theme_stylebox_override("normal", normal)
-    button.pressed.connect(func(): action_requested.emit(action))
+    button.pressed.connect(func():
+        if action == "bag":
+            inventory_requested.emit()
+        else:
+            action_requested.emit(action)
+    )
     parent.add_child(button)
 
 func set_stats(hp: int, mp: int, max_hp: int, max_mp: int) -> void:
@@ -117,6 +158,22 @@ func set_stats(hp: int, mp: int, max_hp: int, max_mp: int) -> void:
     mp_bar.value = clamp(mp, 0, max_mp)
     hp_label.text = "HP  %d / %d" % [hp, max_hp]
     mp_label.text = "MP  %d / %d" % [mp, max_mp]
+
+func set_target(name: String, hp: int, max_hp: int) -> void:
+    if target_label:
+        target_label.text = name
+    if target_bar:
+        target_bar.max_value = max(1, max_hp)
+        target_bar.value = clamp(hp, 0, max_hp)
+
+func clear_target() -> void:
+    if target_label:
+        target_label.text = "NO TARGET"
+    if target_bar:
+        target_bar.value = 0
+
+func set_target_hp(hp: int, max_hp: int) -> void:
+    set_target(target_label.text, hp, max_hp)
 
 func set_world_position(position: Vector3) -> void:
     if minimap:
