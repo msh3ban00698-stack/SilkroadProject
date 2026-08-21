@@ -177,6 +177,8 @@ node_modules/
 
 # Godot editor cache
 .godot/
+*.uid
+*.import
 orleans.codegen.cs
 
 # RIA/Silverlight projects
