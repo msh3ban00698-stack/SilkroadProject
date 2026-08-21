@@ -226,7 +226,8 @@ func get_offline_character() -> Dictionary:
         "mp": 160 if wizard else 82,
         "level": 1,
         "exp": 0,
-        "gold": 0
+        "gold": 0,
+        "skill_points": 3
     }
 
 func _on_create_pressed() -> void:

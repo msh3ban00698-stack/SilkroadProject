@@ -11,6 +11,8 @@ var monsters: Dictionary = {}
 var drops: Dictionary = {}
 var selected_target_id := 0
 var inventory_ui: InventoryUI
+var skill_system
+var skill_tree_ui
 var offline_exp := 0
 var offline_level := 1
 var offline_gold := 0
@@ -22,6 +24,7 @@ func _ready() -> void:
     _build_city()
     _spawn_player()
     _spawn_hud()
+    _spawn_skill_system()
     if offline_mode:
         _spawn_demo_monsters()
 
@@ -39,6 +42,14 @@ func set_protocol(value: SROProtocol) -> void:
     protocol.action_result_received.connect(_on_action_result_received)
     protocol.item_picked_up.connect(_on_item_picked_up)
 
+func _spawn_skill_system() -> void:
+    skill_system = load("res://skill_system.gd").new()
+    skill_tree_ui = load("res://skill_tree_ui.gd").new()
+    hud.add_child(skill_tree_ui)
+    skill_tree_ui.configure(skill_system)
+    skill_tree_ui.skill_use_requested.connect(_on_skill_use_requested)
+    skill_tree_ui.skill_upgrade_requested.connect(_on_skill_upgrade_requested)
+
 func set_character(data: Dictionary) -> void:
     character_data = data
     if hud:
@@ -50,7 +61,11 @@ func set_character(data: Dictionary) -> void:
         offline_gold = int(data.get("gold", offline_gold))
         if player:
             player.configure_build(data)
+        if skill_system:
+            skill_system.configure(data)
         hud.set_stats(hp, mp, max(100, hp), max(100, mp))
+        if skill_system:
+            hud.set_mana(skill_system.mana, skill_system.max_mana)
         hud.set_exp(offline_exp, _exp_to_next(), offline_level)
         hud.set_offline_mode(offline_mode)
 
@@ -61,6 +76,8 @@ func _process(delta: float) -> void:
     if offline_mode:
         offline_time += delta
         _simulate_offline(delta)
+    if skill_system:
+        skill_system.tick(delta)
     if player and protocol and not offline_mode and movement_cooldown <= 0.0 and player.velocity.length() > 0.2:
         var p := player.global_position
         protocol.send_move_to(0, int(p.x), int(p.y), int(p.z))
@@ -355,6 +372,9 @@ func _grant_offline_exp(amount: int) -> void:
     while offline_exp >= _exp_to_next():
         offline_exp -= _exp_to_next()
         offline_level += 1
+        if skill_system:
+            skill_system.level = offline_level
+            skill_system.add_skill_points(1)
         hud.set_status("LEVEL UP! You reached level %d" % offline_level)
     hud.set_exp(offline_exp, _exp_to_next(), offline_level)
 
@@ -448,10 +468,47 @@ func _on_action(action: String) -> void:
             protocol.attack_target(selected_target_id)
         if monsters.has(selected_target_id) and monsters[selected_target_id].local_demo:
             _apply_local_demo_attack()
+    elif action == "skill":
+        if skill_tree_ui:
+            skill_tree_ui.open_for_build()
+            hud.set_status("Choose an active skill for %s" % ("Wizard" if player.get_attack_style() == "wizard" else "Spear"))
     elif action == "pickup":
         _collect_nearest_drop()
     elif action == "potion":
         hud.set_status("Potion ready — inventory consumables are server-driven")
+
+func _on_skill_upgrade_requested(skill_id: String) -> void:
+    if not skill_system:
+        return
+    if skill_system.upgrade(skill_id):
+        hud.set_status("Skill upgraded: %s" % skill_system.get_definition(skill_id).name)
+    else:
+        hud.set_status("Not enough skill points or level requirement not met")
+
+func _on_skill_use_requested(skill_id: String) -> void:
+    if selected_target_id == 0 or not monsters.has(selected_target_id):
+        hud.set_status("Select a target before using a skill")
+        return
+    var result: Dictionary = skill_system.use(skill_id)
+    if result.is_empty():
+        hud.set_status("Skill unavailable: cooldown, Mana, or level requirement")
+        return
+    var monster: MonsterMob = monsters[selected_target_id]
+    var target_position := monster.global_position
+    player.play_attack()
+    CombatVFX.spawn_skill_vfx(self, skill_id, player.get_attack_origin(), target_position, result.color)
+    hud.set_mana(skill_system.mana, skill_system.max_mana)
+    hud.set_status("%s used — Mana %d" % [result.name, result.mana])
+    if offline_mode and monster.local_demo:
+        var damage := int(24.0 * float(result.damage_multiplier))
+        if player.get_attack_style() == "wizard":
+            damage += 10
+        monster.apply_damage(damage)
+        _show_damage(monster, damage)
+        if monster.hp <= 0:
+            _kill_local_demo(monster)
+        else:
+            hud.set_target_hp(monster.hp, monster.max_hp)
 
 func _apply_local_demo_attack() -> void:
     if not monsters.has(selected_target_id):

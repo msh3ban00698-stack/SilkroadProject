@@ -52,3 +52,11 @@
 
 [1]: https://docs.godotengine.org/en/4.3/ "Godot Engine documentation"
 [2]: https://docs.github.com/en/actions "GitHub Actions documentation"
+
+## Phase 6: Active Skill Tree
+
+يحتوي العالم الآن على زر `SKILL` في الـMobile HUD يفتح قائمة Skill Tree الخاصة بالبناء المختار. يعرض النظام نقاط المهارة وMana والرتبة ومتطلبات المستوى وCooldown، وتتم الترقية عبر زر `UPGRADE` والاستخدام عبر زر `USE`.
+
+يمتلك `European Wizard` مهارات `Arcane Bolt` و`Frost Nova` و`Meteor Lance`، بينما يمتلك `Chinese Spear` مهارات `Piercing Thrust` و`Whirlwind Sweep` و`Dragon Impale`. كل مهارة لها ضرر ومعامل Mana وCooldown ولون VFX مختلف، وتستفيد من نقاط المهارة المكتسبة عند Level Up.
+
+يستخدم الـWizard Arcane Bolt ومقذوفات وحلقات جليدية أو نيزكاً ساقطاً، بينما يستخدم الـSpear موجات طعن وحلقات دوران وتأثير Dragon Impale أمامي. يمنع النظام استخدام المهارة عند نقص Mana أو عدم تحقق المستوى أو أثناء Cooldown، ويحدّث شريط MP والقائمة بعد كل استخدام.

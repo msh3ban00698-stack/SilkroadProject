@@ -207,6 +207,13 @@ func set_exp(current: int, required: int, level: int) -> void:
     if exp_label:
         exp_label.text = "LV %d  •  EXP %d / %d" % [level, current, required]
 
+func set_mana(mp: int, max_mp: int) -> void:
+    if mp_bar:
+        mp_bar.max_value = max(1, max_mp)
+        mp_bar.value = clamp(mp, 0, max_mp)
+    if mp_label:
+        mp_label.text = "MP  %d / %d" % [mp, max_mp]
+
 func set_stats(hp: int, mp: int, max_hp: int, max_mp: int) -> void:
     hp_bar.max_value = max(1, max_hp)
     hp_bar.value = clamp(hp, 0, max_hp)
