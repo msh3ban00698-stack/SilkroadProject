@@ -243,7 +243,8 @@
             {
                 LastPingTick = Environment.TickCount;
                 Console.WriteLine("client timeout, disconnecting (last: {0}, elapsed: {1})", LastPingTick, Environment.TickCount - LastPingTick);
-                m_PingTimer.Reset(-1, 0);
+                if (m_PingTimer.IsRunning)
+                    m_PingTimer.Stop();
                 Disconnect();
             }
         }
