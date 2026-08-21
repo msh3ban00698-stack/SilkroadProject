@@ -14,7 +14,7 @@ jobs:
   build-android:
     name: Build Silkroad Mobile APK
     runs-on: ubuntu-22.04
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -75,12 +75,16 @@ jobs:
         run: |
           template_dir="$HOME/.local/share/godot/export_templates/4.4.1.stable"
           mkdir -p "$template_dir"
-          if [ ! -s "$template_dir/android_debug.apk" ] || [ ! -s "$template_dir/android_release.apk" ]; then
+          if [ ! -s "$template_dir/android_debug.apk" ] || [ ! -s "$template_dir/android_release.apk" ] || [ ! -s "$template_dir/android_source.zip" ]; then
             curl --fail --location --retry 3 -o /tmp/godot_export_templates.tpz https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz
-            unzip -j -o /tmp/godot_export_templates.tpz 'templates/android_debug.apk' 'templates/android_release.apk' -d "$template_dir"
+            unzip -j -o /tmp/godot_export_templates.tpz 'templates/android_debug.apk' 'templates/android_release.apk' 'templates/android_source.zip' -d "$template_dir"
           fi
           test -s "$template_dir/android_debug.apk"
           test -s "$template_dir/android_release.apk"
+          test -s "$template_dir/android_source.zip"
+          rm -rf MobileClient/android
+          mkdir -p MobileClient/android
+          unzip -q -o "$template_dir/android_source.zip" -d MobileClient/android
 
       - name: Export release APK
         working-directory: MobileClient
