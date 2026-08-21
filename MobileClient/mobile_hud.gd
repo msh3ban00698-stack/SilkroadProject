@@ -28,6 +28,7 @@ func _build_hud() -> void:
     add_child(root)
 
     var top := VBoxContainer.new()
+    top.set_anchors_preset(Control.PRESET_TOP_LEFT)
     top.position = Vector2(24, 22)
     top.custom_minimum_size = Vector2(300, 112)
     top.add_theme_constant_override("separation", 7)
@@ -42,14 +43,16 @@ func _build_hud() -> void:
     hp_bar = _bar(top, Color("#d94f5c"))
     hp_label = Label.new()
     hp_label.text = "HP  100 / 100"
-    hp_label.position = Vector2(12, 25)
+    hp_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    hp_label.position = Vector2(12, 0)
     hp_label.add_theme_font_size_override("font_size", 13)
     hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     hp_bar.add_child(hp_label)
     mp_bar = _bar(top, Color("#4e91e8"))
     mp_label = Label.new()
     mp_label.text = "MP  100 / 100"
-    mp_label.position = Vector2(12, 25)
+    mp_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    mp_label.position = Vector2(12, 0)
     mp_label.add_theme_font_size_override("font_size", 13)
     mp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     mp_bar.add_child(mp_label)
@@ -57,13 +60,15 @@ func _build_hud() -> void:
     exp_bar.custom_minimum_size = Vector2(300, 18)
     exp_label = Label.new()
     exp_label.text = "LV 1  •  EXP 0 / 100"
-    exp_label.position = Vector2(12, 14)
+    exp_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    exp_label.position = Vector2(12, 0)
     exp_label.add_theme_font_size_override("font_size", 11)
     exp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     exp_bar.add_child(exp_label)
     offline_badge = Label.new()
     offline_badge.text = "OFFLINE TEST"
     offline_badge.visible = false
+    offline_badge.set_anchors_preset(Control.PRESET_TOP_LEFT)
     offline_badge.position = Vector2(24, 142)
     offline_badge.add_theme_font_size_override("font_size", 13)
     offline_badge.add_theme_color_override("font_color", Color("#ffe09a"))
@@ -71,6 +76,7 @@ func _build_hud() -> void:
     _build_target_panel(root)
 
     minimap = MinimapView.new()
+    minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
     minimap.position = Vector2(-8, 18)
     minimap.anchor_left = 1.0
     minimap.anchor_right = 1.0
@@ -80,6 +86,7 @@ func _build_hud() -> void:
     root.add_child(minimap)
 
     joystick = VirtualJoystick.new()
+    joystick.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
     joystick.position = Vector2(22, -198)
     joystick.anchor_top = 1.0
     joystick.anchor_bottom = 1.0
@@ -87,6 +94,7 @@ func _build_hud() -> void:
     root.add_child(joystick)
 
     var actions := HBoxContainer.new()
+    actions.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
     actions.position = Vector2(-480, -190)
     actions.anchor_left = 1.0
     actions.anchor_right = 1.0
@@ -101,6 +109,7 @@ func _build_hud() -> void:
     _action_button(actions, "BAG", "bag", Color("#527aa9"))
 
     status_label = Label.new()
+    status_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
     status_label.position = Vector2(24, -78)
     status_label.anchor_top = 1.0
     status_label.anchor_bottom = 1.0
@@ -110,6 +119,7 @@ func _build_hud() -> void:
 
 func _build_target_panel(root: Control) -> void:
     target_panel = VBoxContainer.new()
+    target_panel.set_anchors_preset(Control.PRESET_TOP_WIDE)
     target_panel.position = Vector2(0, 26)
     target_panel.anchor_left = 0.5
     target_panel.anchor_right = 0.5

@@ -30,8 +30,15 @@ func _ready() -> void:
 func _build_preview() -> void:
     var environment := WorldEnvironment.new()
     var env := Environment.new()
-    env.background_mode = Environment.BG_COLOR
-    env.background_color = Color("#11192d")
+    env.background_mode = Environment.BG_SKY
+    var sky := Sky.new()
+    var sky_material := ProceduralSkyMaterial.new()
+    sky_material.sky_top_color = Color("#101a3b")
+    sky_material.sky_horizon_color = Color("#d58d65")
+    sky_material.ground_bottom_color = Color("#121727")
+    sky_material.ground_horizon_color = Color("#6d5160")
+    sky.sky_material = sky_material
+    env.sky = sky
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     env.ambient_light_color = Color("#8ca6d9")
     env.ambient_light_energy = 0.8
@@ -54,7 +61,7 @@ func _build_preview() -> void:
     add_child(fill)
 
     var camera := Camera3D.new()
-    camera.position = Vector3(0, 1.6, 5.5)
+    camera.position = Vector3(0, 1.55, 7.2)
     camera.look_at_from_position(camera.position, Vector3(0, 1.2, 0))
     camera.current = true
     add_child(camera)
@@ -71,7 +78,7 @@ func _build_preview() -> void:
 
     preview_body = load("res://humanoid_model.gd").new()
     preview_body.configure_build({"class_id": "wizard", "race": "European", "outfit": "Arcane Regalia"})
-    preview_body.position.y = 0.02
+    preview_body.position = Vector3(3.25, 0.02, 0)
     add_child(preview_body)
 
 func _build_ui() -> void:
@@ -79,17 +86,23 @@ func _build_ui() -> void:
     canvas.layer = 10
     add_child(canvas)
 
+    var margin := MarginContainer.new()
+    margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    margin.add_theme_constant_override("margin_left", 64)
+    margin.add_theme_constant_override("margin_right", 64)
+    margin.add_theme_constant_override("margin_top", 44)
+    margin.add_theme_constant_override("margin_bottom", 44)
+    canvas.add_child(margin)
+
     var root := HBoxContainer.new()
-    root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    root.add_theme_constant_override("separation", 18)
-    root.add_theme_constant_override("margin_left", 24)
-    root.add_theme_constant_override("margin_right", 24)
-    root.add_theme_constant_override("margin_top", 24)
-    root.add_theme_constant_override("margin_bottom", 24)
-    canvas.add_child(root)
+    root.add_theme_constant_override("separation", 34)
+    root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+    root.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    margin.add_child(root)
 
     var left := VBoxContainer.new()
-    left.custom_minimum_size = Vector2(300, 0)
+    left.custom_minimum_size = Vector2(460, 0)
+    left.size_flags_horizontal = Control.SIZE_FILL
     left.add_theme_constant_override("separation", 10)
     root.add_child(left)
     var title := Label.new()
@@ -121,12 +134,19 @@ func _build_ui() -> void:
     left.add_child(enter_button)
 
     var panel := PanelContainer.new()
-    panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-    panel.custom_minimum_size = Vector2(360, 0)
+    panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+    panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+    panel.custom_minimum_size = Vector2(760, 0)
     root.add_child(panel)
+    var panel_margin := MarginContainer.new()
+    panel_margin.add_theme_constant_override("margin_left", 26)
+    panel_margin.add_theme_constant_override("margin_right", 26)
+    panel_margin.add_theme_constant_override("margin_top", 26)
+    panel_margin.add_theme_constant_override("margin_bottom", 26)
+    panel.add_child(panel_margin)
     var form := VBoxContainer.new()
-    form.add_theme_constant_override("separation", 10)
-    panel.add_child(form)
+    form.add_theme_constant_override("separation", 12)
+    panel_margin.add_child(form)
     var form_title := Label.new()
     form_title.text = "CREATE NEW HERO"
     form_title.add_theme_font_size_override("font_size", 23)
@@ -274,7 +294,7 @@ func _refresh_preview() -> void:
         "race": "European" if wizard else "Chinese",
         "outfit": "Arcane Regalia" if wizard else "Jade War Robe"
     })
-    preview_body.scale = Vector3.ONE * (0.92 + scale_slider.value / 260.0)
+    preview_body.scale = Vector3.ONE * (1.16 + scale_slider.value / 300.0)
 
 func _material(color: Color, metallic: float, roughness: float) -> StandardMaterial3D:
     var material := StandardMaterial3D.new()

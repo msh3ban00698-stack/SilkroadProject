@@ -99,14 +99,14 @@ func _build_environment() -> void:
     environment.sky = sky
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     environment.ambient_light_color = Color("#a9c9e5")
-    environment.ambient_light_energy = 0.82
+    environment.ambient_light_energy = 0.55
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-    environment.tonemap_exposure = 1.18
-    environment.tonemap_white = 1.35
+    environment.tonemap_exposure = 0.72
+    environment.tonemap_white = 1.55
     environment.glow_enabled = true
-    environment.glow_intensity = 1.35
-    environment.glow_strength = 1.25
-    environment.glow_bloom = 0.22
+    environment.glow_intensity = 0.92
+    environment.glow_strength = 0.86
+    environment.glow_bloom = 0.12
     environment.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
     environment.glow_hdr_threshold = 0.72
     environment.glow_hdr_scale = 2.0
@@ -116,7 +116,7 @@ func _build_environment() -> void:
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-52, -32, 0)
     sun.light_color = Color("#ffe2b5")
-    sun.light_energy = 1.45
+    sun.light_energy = 0.92
     sun.shadow_enabled = true
     sun.directional_shadow_max_distance = 70.0
     sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
@@ -127,14 +127,14 @@ func _build_environment() -> void:
     var moon_fill := DirectionalLight3D.new()
     moon_fill.rotation_degrees = Vector3(-20, 148, 0)
     moon_fill.light_color = Color("#75a9e8")
-    moon_fill.light_energy = 0.28
+    moon_fill.light_energy = 0.18
     moon_fill.shadow_enabled = false
     add_child(moon_fill)
 
     var golden_fill := OmniLight3D.new()
     golden_fill.position = Vector3(0, 6, 8)
     golden_fill.light_color = Color("#e7a85d")
-    golden_fill.light_energy = 1.1
+    golden_fill.light_energy = 0.55
     golden_fill.omni_range = 18.0
     add_child(golden_fill)
 
@@ -179,6 +179,12 @@ func _build_city() -> void:
     water.material_override = _water_shader()
     add_child(water)
 
+    _add_glb_asset("res://assets/kenney/dungeon/floor-detail.glb", Vector3(-3.2, 0.02, -2.0), Vector3.ONE * 2.8)
+    _add_glb_asset("res://assets/kenney/dungeon/floor-detail.glb", Vector3(3.2, 0.02, -2.0), Vector3.ONE * 2.8)
+    _add_glb_asset("res://assets/kenney/dungeon/rocks.glb", Vector3(-11.0, 0.0, -12.0), Vector3.ONE * 2.4)
+    _add_glb_asset("res://assets/kenney/dungeon/rocks.glb", Vector3(11.0, 0.0, -12.0), Vector3.ONE * 2.4)
+    _add_glb_asset("res://assets/kenney/dungeon/wood-structure.glb", Vector3(0.0, 0.0, 15.0), Vector3.ONE * 2.8)
+
     for x in [-18.0, 18.0]:
         for z in [-15.0, 2.0, 19.0]:
             _build_house(Vector3(x, 0, z), 1.0 if x < 0 else 0.86)
@@ -191,6 +197,16 @@ func _build_city() -> void:
     _build_gate(Vector3(0, 0, 28))
     _build_bridge(Vector3(0, 0, -24))
     _build_market(Vector3(0, 0, 10))
+
+func _add_glb_asset(path: String, position: Vector3, scale_value: Vector3) -> Node3D:
+    var scene: PackedScene = load(path)
+    if scene == null:
+        return null
+    var instance := scene.instantiate()
+    instance.position = position
+    instance.scale = scale_value
+    add_child(instance)
+    return instance
 
 func _build_house(position: Vector3, scale_factor: float) -> void:
     var house := Node3D.new()

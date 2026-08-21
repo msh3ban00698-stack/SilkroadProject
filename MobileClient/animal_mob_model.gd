@@ -11,6 +11,18 @@ func configure_animal(value: int = 0) -> void:
     _build_animal()
 
 func _build_animal() -> void:
+    var loader_script = load("res://asset_loader.gd")
+    if loader_script:
+        var imported_orc = loader_script.instantiate_monster()
+        if imported_orc:
+            imported_orc.name = "KenneyMangyang"
+            imported_orc.scale = Vector3.ONE * 3.5
+            imported_orc.position = Vector3(0, 0.02, 0)
+            add_child(imported_orc)
+            return
+    _build_procedural_animal()
+
+func _build_procedural_animal() -> void:
     var fur := Color("#a96f48") if rarity < 2 else Color("#8753a6")
     var belly := Color("#e1b27b") if rarity < 2 else Color("#c894e5")
     var accent := Color("#f0cf7b")

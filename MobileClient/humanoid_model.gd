@@ -7,6 +7,9 @@ var race_name := "Chinese"
 var outfit_name := "Jade War Robe"
 var skeleton: Skeleton3D
 var bones: Dictionary = {}
+var imported_model: Node3D
+var weapon_mount: Node3D
+var imported_mode := false
 var animation_state := "idle"
 var animation_time := 0.0
 var attack_time := 0.0
@@ -24,6 +27,9 @@ func configure_build(data: Dictionary) -> void:
 
 func _process(delta: float) -> void:
     animation_time += delta
+    if imported_mode:
+        _animate_imported_model(delta)
+        return
     if attack_time > 0.0:
         attack_time = max(0.0, attack_time - delta)
         _pose_attack(1.0 - attack_time / 0.62)
@@ -34,11 +40,55 @@ func _process(delta: float) -> void:
 
 func set_animation_state(state: String) -> void:
     animation_state = state
+    if imported_mode:
+        _play_imported_animation("run" if state == "walk" else "idle")
 
 func play_attack() -> void:
+    if imported_mode:
+        _play_imported_animation("attack")
     attack_time = 0.62
 
 func _build_rig() -> void:
+    if _build_imported_model():
+        return
+    _build_procedural_rig()
+
+func _build_imported_model() -> bool:
+    var loader_script = load("res://asset_loader.gd")
+    if loader_script == null:
+        return false
+    imported_model = loader_script.instantiate_humanoid()
+    if imported_model == null:
+        return false
+    imported_mode = true
+    imported_model.name = "KenneyHumanoid"
+    imported_model.scale = Vector3.ONE * 2.0
+    add_child(imported_model)
+    _tint_imported_model()
+    weapon_mount = Node3D.new()
+    weapon_mount.name = "WeaponMount"
+    weapon_mount.position = Vector3(0.34, 0.64, -0.15)
+    weapon_mount.rotation_degrees = Vector3(0, 0, -10)
+    imported_model.add_child(weapon_mount)
+    var weapon = loader_script.instantiate_weapon(weapon_style)
+    weapon.name = "ImportedWeapon"
+    weapon.scale = Vector3.ONE * (2.2 if weapon_style == "spear" else 2.0)
+    weapon.position = Vector3(0, -0.1, 0)
+    weapon_mount.add_child(weapon)
+    _tint_weapon(weapon)
+    if weapon_style == "wizard":
+        var orb := MeshInstance3D.new()
+        var orb_mesh := SphereMesh.new()
+        orb_mesh.radius = 0.11
+        orb_mesh.height = 0.22
+        orb.mesh = orb_mesh
+        orb.position = Vector3(0, 0.62, 0)
+        orb.material_override = _material(Color("#8edbff"), 0.05, 0.16, true)
+        weapon_mount.add_child(orb)
+    _play_imported_animation("idle")
+    return true
+
+func _build_procedural_rig() -> void:
     skeleton = Skeleton3D.new()
     skeleton.name = "HumanoidSkeleton"
     add_child(skeleton)
@@ -90,6 +140,42 @@ func _build_rig() -> void:
         _build_staff(trim)
     else:
         _build_spear(trim)
+
+func _tint_imported_model() -> void:
+    var skin := Color("#c98968") if race_name.to_lower().contains("european") else Color("#d49a75")
+    var cloth := Color("#456fb4") if weapon_style == "wizard" else Color("#2f8a75")
+    for mesh in imported_model.find_children("*", "MeshInstance3D", true, false):
+        var color := skin if str(mesh.name).to_lower().contains("head") else cloth
+        mesh.material_override = _material(color, 0.05, 0.72)
+
+func _tint_weapon(weapon: Node3D) -> void:
+    var accent := Color("#8edbff") if weapon_style == "wizard" else Color("#e5bb5f")
+    for mesh in weapon.find_children("*", "MeshInstance3D", true, false):
+        mesh.material_override = _material(accent, 0.55, 0.24, true)
+
+func _animate_imported_model(_delta: float) -> void:
+    if not imported_model:
+        return
+    if attack_time > 0.0:
+        attack_time = max(0.0, attack_time - _delta)
+        var attack_progress := 1.0 - attack_time / 0.62
+        imported_model.rotation.y = sin(attack_progress * PI) * 0.18
+        weapon_mount.rotation.z = -0.25 + sin(attack_progress * PI) * 0.9
+    else:
+        var sway := sin(animation_time * (7.0 if animation_state == "walk" else 1.6)) * (0.07 if animation_state == "walk" else 0.018)
+        imported_model.rotation.y = sway
+        weapon_mount.rotation.z = -0.18
+
+func _play_imported_animation(preferred: String) -> void:
+    if not imported_model:
+        return
+    var animation_player := imported_model.find_child("AnimationPlayer", true, false)
+    if not animation_player:
+        return
+    for animation_name in animation_player.get_animation_list():
+        if str(animation_name).to_lower().contains(preferred):
+            animation_player.play(animation_name)
+            return
 
 func _bone(name: String, parent: int, position: Vector3) -> void:
     var index := skeleton.get_bone_count()

@@ -43,15 +43,21 @@ func _build_login_ui() -> void:
     background.color = Color("#090f1f")
     background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     login_layer.add_child(background)
+    var center := CenterContainer.new()
+    center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+    login_layer.add_child(center)
+    var card := PanelContainer.new()
+    card.custom_minimum_size = Vector2(860, 0)
+    card.add_theme_stylebox_override("panel", _login_panel_style())
+    center.add_child(card)
     var margin := MarginContainer.new()
-    margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    margin.add_theme_constant_override("margin_left", 54)
-    margin.add_theme_constant_override("margin_right", 54)
-    margin.add_theme_constant_override("margin_top", 66)
-    margin.add_theme_constant_override("margin_bottom", 66)
-    login_layer.add_child(margin)
+    margin.add_theme_constant_override("margin_left", 34)
+    margin.add_theme_constant_override("margin_right", 34)
+    margin.add_theme_constant_override("margin_top", 28)
+    margin.add_theme_constant_override("margin_bottom", 28)
+    card.add_child(margin)
     var content := VBoxContainer.new()
-    content.add_theme_constant_override("separation", 16)
+    content.add_theme_constant_override("separation", 12)
     margin.add_child(content)
     var title := Label.new()
     title.text = "SILKROAD MOBILE  •  CHARACTER SELECT"
@@ -79,7 +85,7 @@ func _build_login_ui() -> void:
     login_button.pressed.connect(_on_login_pressed)
     content.add_child(login_button)
     offline_button = Button.new()
-    offline_button.text = "PLAY OFFLINE (TEST MODE)"
+    offline_button.text = "PLAY OFFLINE"
     offline_button.custom_minimum_size = Vector2(0, 58)
     offline_button.add_theme_font_size_override("font_size", 18)
     offline_button.add_theme_color_override("font_color", Color("#ffe6a0"))
@@ -97,11 +103,19 @@ func _build_login_ui() -> void:
     status_label.add_theme_color_override("font_color", Color("#c8d3e8"))
     content.add_child(status_label)
     var note := Label.new()
-    note.text = "After Agent authentication the client requests 0x7007, renders the character list, and can enter the procedural Jangan-inspired world."
+    note.text = "Landscape RPG client • Choose a hero, then enter the Jangan frontier."
     note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     note.add_theme_font_size_override("font_size", 13)
     note.add_theme_color_override("font_color", Color("#71809c"))
     content.add_child(note)
+
+func _login_panel_style() -> StyleBoxFlat:
+    var style := StyleBoxFlat.new()
+    style.bg_color = Color("#101827e8")
+    style.border_color = Color("#9e793f")
+    style.set_border_width_all(2)
+    style.set_corner_radius_all(18)
+    return style
 
 func _add_text_field(parent: VBoxContainer, caption: String, value: String) -> LineEdit:
     var label := Label.new()
@@ -146,6 +160,9 @@ func _enter_world_offline(character_data: Dictionary) -> void:
     starter_world.set_offline_mode(true)
     add_child(starter_world)
     starter_world.set_character(character_data)
+    if character_select:
+        character_select.queue_free()
+        character_select = null
     login_layer.visible = false
 
 func _on_login_pressed() -> void:
