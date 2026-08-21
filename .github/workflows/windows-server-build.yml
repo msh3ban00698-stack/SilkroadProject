@@ -40,6 +40,8 @@ jobs:
               throw "Required dependency is missing: $file"
             }
             Copy-Item "$env:GITHUB_WORKSPACE\$file" "$env:GITHUB_WORKSPACE\server-dist\$file" -Force
+            Copy-Item "$env:GITHUB_WORKSPACE\$file" "$env:GITHUB_WORKSPACE\server-dist\GatewayServer\$file" -Force
+            Copy-Item "$env:GITHUB_WORKSPACE\$file" "$env:GITHUB_WORKSPACE\server-dist\SR_GameServer\$file" -Force
           }
 
       - name: Build GatewayServer
