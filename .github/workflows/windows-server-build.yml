@@ -49,6 +49,7 @@ jobs:
             /t:Rebuild /m `
             /p:Configuration=Release `
             /p:Platform=x86 `
+            /p:TargetFrameworkVersion=v4.8 `
             /p:BuildProjectReferences=false `
             /p:ReferencePath="$env:GITHUB_WORKSPACE" `
             /p:OutputPath="$env:GITHUB_WORKSPACE\server-dist\GatewayServer\" `
@@ -61,6 +62,7 @@ jobs:
             /t:Rebuild /m `
             /p:Configuration=Release `
             /p:Platform=x86 `
+            /p:TargetFrameworkVersion=v4.8 `
             /p:BuildProjectReferences=false `
             /p:ReferencePath="$env:GITHUB_WORKSPACE" `
             /p:OutputPath="$env:GITHUB_WORKSPACE\server-dist\SR_GameServer\" `
