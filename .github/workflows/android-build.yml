@@ -69,7 +69,7 @@ jobs:
 
       - name: Import Godot project
         working-directory: MobileClient
-        run: godot --headless --editor --quit --path .
+        run: godot --headless --editor-settings-dir "$HOME/.config/godot" --editor --quit --path .
 
       - name: Ensure Godot Android export templates
         run: |
@@ -86,7 +86,7 @@ jobs:
         working-directory: MobileClient
         run: |
           mkdir -p build
-          godot --headless --path . --export-debug "Android" build/SilkroadMobile.apk
+          godot --headless --verbose --editor-settings-dir "$HOME/.config/godot" --path . --export-debug "Android" build/SilkroadMobile.apk
           test -s build/SilkroadMobile.apk
 
       - name: Upload APK artifact
