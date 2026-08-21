@@ -33,21 +33,21 @@ func _build_preview() -> void:
     env.background_mode = Environment.BG_SKY
     var sky := Sky.new()
     var sky_material := ProceduralSkyMaterial.new()
-    sky_material.sky_top_color = Color("#070f26")
-    sky_material.sky_horizon_color = Color("#d99566")
-    sky_material.ground_bottom_color = Color("#0c1424")
-    sky_material.ground_horizon_color = Color("#54404c")
+    sky_material.sky_top_color = Color("#020713")
+    sky_material.sky_horizon_color = Color("#405f86")
+    sky_material.ground_bottom_color = Color("#050a18")
+    sky_material.ground_horizon_color = Color("#1d2947")
     sky.sky_material = sky_material
     env.sky = sky
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    env.ambient_light_color = Color("#8ca6d9")
-    env.ambient_light_energy = 0.52
+    env.ambient_light_color = Color("#7894c4")
+    env.ambient_light_energy = 0.4
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     env.tonemap_exposure = 0.82
     env.tonemap_white = 1.6
     env.fog_enabled = true
-    env.fog_light_color = Color("#b98a83")
-    env.fog_light_energy = 0.36
+    env.fog_light_color = Color("#55739c")
+    env.fog_light_energy = 0.32
     env.fog_density = 0.006
     env.fog_sky_affect = 0.4
     env.ssao_enabled = true
@@ -61,21 +61,21 @@ func _build_preview() -> void:
 
     var key := DirectionalLight3D.new()
     key.rotation_degrees = Vector3(-38, -28, 0)
-    key.light_color = Color("#ffe2b0")
-    key.light_energy = 0.82
+    key.light_color = Color("#f0c984")
+    key.light_energy = 0.84
     key.shadow_enabled = true
     add_child(key)
 
     var fill := OmniLight3D.new()
     fill.position = Vector3(1.5, 2.0, 2.0)
-    fill.light_color = Color("#5ca9ff")
-    fill.light_energy = 1.15
+    fill.light_color = Color("#70dfff")
+    fill.light_energy = 1.35
     fill.omni_range = 8.0
     add_child(fill)
 
     var camera := Camera3D.new()
-    camera.position = Vector3(0, 1.55, 7.2)
-    camera.look_at_from_position(camera.position, Vector3(0, 1.2, 0))
+    camera.position = Vector3(-1.15, 1.55, 7.2)
+    camera.look_at_from_position(camera.position, Vector3(-1.15, 1.2, 0))
     camera.current = true
     add_child(camera)
 
@@ -86,12 +86,13 @@ func _build_preview() -> void:
     floor_mesh.height = 0.18
     floor.mesh = floor_mesh
     floor.position.y = -0.12
-    floor.material_override = _material(Color("#26365a"), 0.15, 0.2)
+    floor.material_override = _material(Color("#1d2a43"), 0.38, 0.18)
     add_child(floor)
 
     preview_body = load("res://humanoid_model.gd").new()
     preview_body.configure_build({"class_id": "wizard", "race": "European", "outfit": "Arcane Regalia"})
-    preview_body.position = Vector3(3.25, 0.02, 0)
+    preview_body.position = Vector3(3.2, 0.02, -0.25)
+    preview_body.scale = Vector3.ONE * 1.05
     add_child(preview_body)
 
 func _build_ui() -> void:
@@ -119,12 +120,12 @@ func _build_ui() -> void:
     left.add_theme_constant_override("separation", 10)
     root.add_child(left)
     var title := Label.new()
-    title.text = "CHARACTER SELECT"
+    title.text = "✦  CELESTIAL ASCENSION"
     title.add_theme_font_size_override("font_size", 27)
     title.add_theme_color_override("font_color", Color("#f2c66d"))
     left.add_child(title)
     var caption := Label.new()
-    caption.text = "Choose a hero for your journey"
+    caption.text = "Choose the constellation that will carry your legend"
     caption.add_theme_color_override("font_color", Color("#a9b7d1"))
     left.add_child(caption)
     list_box = VBoxContainer.new()
@@ -137,9 +138,11 @@ func _build_ui() -> void:
     list_hint.add_theme_color_override("font_color", Color("#8d9bb8"))
     list_box.add_child(list_hint)
     enter_button = Button.new()
-    enter_button.text = "ENTER SELECTED HERO"
+    enter_button.text = "ENTER THE SANCTUM"
     enter_button.disabled = true
     enter_button.custom_minimum_size = Vector2(0, 52)
+    enter_button.add_theme_stylebox_override("normal", _panel_style(Color("#26365a"), Color("#e7c77b"), 10, 2))
+    enter_button.add_theme_color_override("font_color", Color("#fff1c2"))
     enter_button.pressed.connect(func():
         if selected_slot >= 0:
             enter_requested.emit(selected_slot)
@@ -147,9 +150,10 @@ func _build_ui() -> void:
     left.add_child(enter_button)
 
     var panel := PanelContainer.new()
+    panel.add_theme_stylebox_override("panel", _panel_style(Color("#101625e8"), Color("#80643b"), 20, 2))
     panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
     panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    panel.custom_minimum_size = Vector2(760, 0)
+    panel.custom_minimum_size = Vector2(660, 0)
     root.add_child(panel)
     var panel_margin := MarginContainer.new()
     panel_margin.add_theme_constant_override("margin_left", 26)
@@ -161,7 +165,7 @@ func _build_ui() -> void:
     form.add_theme_constant_override("separation", 12)
     panel_margin.add_child(form)
     var form_title := Label.new()
-    form_title.text = "CREATE NEW HERO"
+    form_title.text = "FORGE A CELESTIAL HERO"
     form_title.add_theme_font_size_override("font_size", 23)
     form_title.add_theme_color_override("font_color", Color("#f2c66d"))
     form.add_child(form_title)
@@ -182,8 +186,10 @@ func _build_ui() -> void:
     scale_slider.value_changed.connect(func(_value): _refresh_preview())
     form.add_child(scale_slider)
     var create := Button.new()
-    create.text = "CREATE CHARACTER"
+    create.text = "FORGE CHARACTER"
     create.custom_minimum_size = Vector2(0, 54)
+    create.add_theme_stylebox_override("normal", _panel_style(Color("#26365a"), Color("#e7c77b"), 10, 2))
+    create.add_theme_color_override("font_color", Color("#fff1c2"))
     create.pressed.connect(_on_create_pressed)
     form.add_child(create)
     status_label = Label.new()
@@ -198,6 +204,8 @@ func _field(parent: VBoxContainer, label_text: String, value: String) -> LineEdi
     parent.add_child(label)
     var edit := LineEdit.new()
     edit.text = value
+    edit.add_theme_stylebox_override("normal", _panel_style(Color("#0b1120"), Color("#80643b"), 8, 1))
+    edit.add_theme_color_override("font_color", Color("#f2e6c5"))
     edit.custom_minimum_size = Vector2(0, 48)
     parent.add_child(edit)
     return edit
@@ -207,6 +215,8 @@ func _option(parent: VBoxContainer, label_text: String, values: Array[String]) -
     label.text = label_text
     parent.add_child(label)
     var option := OptionButton.new()
+    option.add_theme_stylebox_override("normal", _panel_style(Color("#0b1120"), Color("#80643b"), 8, 1))
+    option.add_theme_color_override("font_color", Color("#f2e6c5"))
     for value in values:
         option.add_item(value)
     option.custom_minimum_size = Vector2(0, 46)
@@ -278,7 +288,10 @@ func set_characters(characters: Array) -> void:
         child.queue_free()
     for character in character_list:
         var button := Button.new()
-        button.text = "Slot %d  •  %s  •  Lv.%d" % [character.slot + 1, character.name, character.level]
+        button.text = "✦  Slot %d  •  %s  •  Lv.%d" % [character.slot + 1, character.name, character.level]
+        button.add_theme_stylebox_override("normal", _panel_style(Color("#18213a"), Color("#80643b"), 10, 1))
+        button.add_theme_stylebox_override("hover", _panel_style(Color("#26365a"), Color("#f2c66d"), 10, 2))
+        button.add_theme_color_override("font_color", Color("#f2e6c5"))
         button.custom_minimum_size = Vector2(0, 54)
         button.pressed.connect(func():
             selected_slot = character.slot
@@ -308,6 +321,16 @@ func _refresh_preview() -> void:
         "outfit": "Arcane Regalia" if wizard else "Jade War Robe"
     })
     preview_body.scale = Vector3.ONE * (1.16 + scale_slider.value / 300.0)
+
+func _panel_style(fill: Color, border: Color, radius: int, width: int) -> StyleBoxFlat:
+    var style := StyleBoxFlat.new()
+    style.bg_color = fill
+    style.border_color = border
+    style.set_border_width_all(width)
+    style.set_corner_radius_all(radius)
+    style.shadow_color = Color(0, 0, 0, 0.42)
+    style.shadow_size = 8
+    return style
 
 func _material(color: Color, metallic: float, roughness: float) -> StandardMaterial3D:
     var material := StandardMaterial3D.new()

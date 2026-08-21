@@ -112,9 +112,9 @@ func _build_procedural_rig() -> void:
     _bone("foot_r", bones["shin_r"], Vector3(0, -0.42, -0.12))
 
     var skin := Color("#c98968") if race_name.to_lower().contains("european") else Color("#d49a75")
-    var cloth := Color("#4b70b5") if weapon_style == "wizard" else Color("#2f8a75")
-    var trim := Color("#d9b05e")
-    var dark := Color("#1b263f")
+    var cloth := Color("#172c58") if weapon_style == "wizard" else Color("#173d3d")
+    var trim := Color("#e6c477")
+    var dark := Color("#0a1228")
     _attach_box("pelvis", Vector3(0.58, 0.32, 0.42), Vector3(0, -0.14, 0), cloth)
     if weapon_style == "wizard":
         _attach_robe("spine", cloth, trim)
@@ -140,10 +140,97 @@ func _build_procedural_rig() -> void:
         _build_staff(trim)
     else:
         _build_spear(trim)
+    _build_celestial_regalia(cloth, trim, dark)
+
+func _build_celestial_regalia(cloth: Color, trim: Color, dark: Color) -> void:
+    var chest_attachment := _attachment("chest")
+    for side in [-1.0, 1.0]:
+        var pauldron := MeshInstance3D.new()
+        var pauldron_mesh := SphereMesh.new()
+        pauldron_mesh.radius = 0.24
+        pauldron_mesh.height = 0.32
+        pauldron_mesh.radial_segments = 24
+        pauldron_mesh.rings = 12
+        pauldron.mesh = pauldron_mesh
+        pauldron.position = Vector3(0.47 * side, -0.02, 0.02)
+        pauldron.scale = Vector3(1.3, 0.72, 1.08)
+        pauldron.material_override = _material(trim if weapon_style == "spear" else cloth.lightened(0.12), 0.48, 0.22, true)
+        chest_attachment.add_child(pauldron)
+    var crest := MeshInstance3D.new()
+    var crest_mesh := TorusMesh.new()
+    crest_mesh.inner_radius = 0.11
+    crest_mesh.outer_radius = 0.16
+    crest_mesh.rings = 28
+    crest_mesh.ring_segments = 14
+    crest.mesh = crest_mesh
+    crest.position = Vector3(0, -0.08, -0.31)
+    crest.rotation_degrees = Vector3(90, 0, 0)
+    crest.material_override = _material(trim, 0.62, 0.16, true)
+    chest_attachment.add_child(crest)
+    var halo := MeshInstance3D.new()
+    var halo_mesh := TorusMesh.new()
+    halo_mesh.inner_radius = 0.52
+    halo_mesh.outer_radius = 0.555
+    halo_mesh.rings = 36
+    halo_mesh.ring_segments = 18
+    halo.mesh = halo_mesh
+    halo.position = Vector3(0, 2.22, 0.12)
+    halo.rotation_degrees = Vector3(18, 0, 0)
+    halo.material_override = _material(Color("#70dfff") if weapon_style == "wizard" else Color("#f0a45e"), 0.38, 0.18, true)
+    add_child(halo)
+    var aura := GPUParticles3D.new()
+    aura.name = "CelestialAura"
+    aura.amount = 18
+    aura.lifetime = 1.8
+    aura.local_coords = true
+    var process := ParticleProcessMaterial.new()
+    process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+    process.emission_sphere_radius = 0.48
+    process.direction = Vector3(0, 1, 0)
+    process.spread = 25.0
+    process.initial_velocity_min = 0.08
+    process.initial_velocity_max = 0.22
+    process.gravity = Vector3.ZERO
+    process.scale_min = 0.025
+    process.scale_max = 0.07
+    aura.process_material = process
+    var spark_mesh := SphereMesh.new()
+    spark_mesh.radius = 0.045
+    spark_mesh.height = 0.09
+    spark_mesh.radial_segments = 10
+    aura.draw_pass_1 = spark_mesh
+    aura.draw_pass_1.material = _material(Color("#8defff") if weapon_style == "wizard" else Color("#f2b86d"), 0.2, 0.18, true)
+    aura.position.y = 0.8
+    add_child(aura)
+    if weapon_style == "wizard":
+        for side in [-1.0, 1.0]:
+            var talisman := MeshInstance3D.new()
+            var talisman_mesh := BoxMesh.new()
+            talisman_mesh.size = Vector3(0.16, 0.38, 0.025)
+            talisman.mesh = talisman_mesh
+            talisman.position = Vector3(0.74 * side, 1.72, 0.0)
+            talisman.rotation_degrees = Vector3(0, 0, -14.0 * side)
+            talisman.material_override = _material(Color("#74e8ff"), 0.1, 0.2, true)
+            add_child(talisman)
+            var talisman_tween := create_tween().set_loops(6)
+            talisman_tween.tween_property(talisman, "position:y", talisman.position.y + 0.12, 1.1).set_trans(Tween.TRANS_SINE)
+            talisman_tween.tween_property(talisman, "position:y", talisman.position.y - 0.12, 1.1).set_trans(Tween.TRANS_SINE)
+    else:
+        var sash := MeshInstance3D.new()
+        var sash_mesh := TorusMesh.new()
+        sash_mesh.inner_radius = 0.36
+        sash_mesh.outer_radius = 0.42
+        sash_mesh.rings = 32
+        sash_mesh.ring_segments = 16
+        sash.mesh = sash_mesh
+        sash.position = Vector3(0, 0.75, 0)
+        sash.rotation_degrees.x = 90
+        sash.material_override = _material(Color("#d46a4f"), 0.14, 0.32, true)
+        add_child(sash)
 
 func _tint_imported_model() -> void:
     var skin := Color("#c98968") if race_name.to_lower().contains("european") else Color("#d49a75")
-    var cloth := Color("#456fb4") if weapon_style == "wizard" else Color("#2f8a75")
+    var cloth := Color("#172c58") if weapon_style == "wizard" else Color("#173d3d")
     for mesh in imported_model.find_children("*", "MeshInstance3D", true, false):
         var source_material = mesh.get_active_material(0)
         if source_material is StandardMaterial3D:
@@ -212,9 +299,9 @@ func _attach_box(bone_name: String, size: Vector3, position: Vector3, color: Col
 
 func _attach_robe(bone_name: String, color: Color, accent: Color) -> void:
     var mesh := CylinderMesh.new()
-    mesh.top_radius = 0.36
-    mesh.bottom_radius = 0.62
-    mesh.height = 1.12
+    mesh.top_radius = 0.26
+    mesh.bottom_radius = 0.72
+    mesh.height = 1.45
     var node := MeshInstance3D.new()
     node.mesh = mesh
     node.position = Vector3(0, -0.32, 0)
@@ -341,10 +428,10 @@ func _material(color: Color, metallic: float, roughness: float, glow := false) -
     material.metallic = metallic
     material.roughness = roughness
     material.clearcoat_enabled = true
-    material.clearcoat = 0.16 if metallic < 0.4 else 0.42
-    material.clearcoat_roughness = 0.28
+    material.clearcoat = 0.24 if metallic < 0.4 else 0.58
+    material.clearcoat_roughness = 0.22
     material.anisotropy_enabled = metallic < 0.25
-    material.anisotropy = 0.18 if metallic < 0.25 else 0.0
+    material.anisotropy = 0.26 if metallic < 0.25 else 0.0
     if glow:
         material.emission_enabled = true
         material.emission = color

@@ -89,24 +89,24 @@ func _build_environment() -> void:
     environment.background_mode = Environment.BG_SKY
     var sky := Sky.new()
     var sky_material := ProceduralSkyMaterial.new()
-    sky_material.sky_top_color = Color("#070f26")
-    sky_material.sky_horizon_color = Color("#d99566")
-    sky_material.ground_bottom_color = Color("#0c1424")
-    sky_material.ground_horizon_color = Color("#54404c")
+    sky_material.sky_top_color = Color("#020713")
+    sky_material.sky_horizon_color = Color("#405f86")
+    sky_material.ground_bottom_color = Color("#050a18")
+    sky_material.ground_horizon_color = Color("#1d2947")
     sky_material.sun_angle_max = 18.0
     sky_material.sun_curve = 0.08
     sky.sky_material = sky_material
     environment.sky = sky
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color("#a9c9e5")
-    environment.ambient_light_energy = 0.48
+    environment.ambient_light_color = Color("#7894c4")
+    environment.ambient_light_energy = 0.4
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     environment.tonemap_exposure = 0.78
     environment.tonemap_white = 1.6
     environment.fog_enabled = true
-    environment.fog_light_color = Color("#b98a83")
-    environment.fog_light_energy = 0.42
-    environment.fog_density = 0.0065
+    environment.fog_light_color = Color("#55739c")
+    environment.fog_light_energy = 0.32
+    environment.fog_density = 0.0055
     environment.fog_sky_affect = 0.38
     environment.fog_height = 1.2
     environment.fog_height_density = 0.035
@@ -130,8 +130,8 @@ func _build_environment() -> void:
 
     var sun := DirectionalLight3D.new()
     sun.rotation_degrees = Vector3(-52, -32, 0)
-    sun.light_color = Color("#ffe2b5")
-    sun.light_energy = 0.92
+    sun.light_color = Color("#f0c984")
+    sun.light_energy = 0.84
     sun.shadow_enabled = true
     sun.directional_shadow_max_distance = 70.0
     sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
@@ -141,8 +141,8 @@ func _build_environment() -> void:
 
     var moon_fill := DirectionalLight3D.new()
     moon_fill.rotation_degrees = Vector3(-20, 148, 0)
-    moon_fill.light_color = Color("#75a9e8")
-    moon_fill.light_energy = 0.18
+    moon_fill.light_color = Color("#78c7e8")
+    moon_fill.light_energy = 0.26
     moon_fill.shadow_enabled = false
     add_child(moon_fill)
 
@@ -170,6 +170,15 @@ func _build_city() -> void:
     collider.position.y = -0.16
     ground.add_child(collider)
     add_child(ground)
+
+    var celestial_apron := MeshInstance3D.new()
+    celestial_apron.name = "CelestialStoneApron"
+    var apron_mesh := PlaneMesh.new()
+    apron_mesh.size = Vector2(90, 34)
+    celestial_apron.mesh = apron_mesh
+    celestial_apron.position = Vector3(0, 0.045, 16.0)
+    celestial_apron.material_override = _pattern_shader(Color("#1c2940"), Color("#2b4662"), 16.0, 0.012)
+    add_child(celestial_apron)
 
     var road := MeshInstance3D.new()
     var road_mesh := PlaneMesh.new()
@@ -206,6 +215,163 @@ func _build_city() -> void:
     _build_gate(Vector3(0, 0, 28))
     _build_bridge(Vector3(0, 0, -24))
     _build_market(Vector3(0, 0, 10))
+    _build_celestial_sanctum()
+
+func _build_celestial_sanctum() -> void:
+    var dais := MeshInstance3D.new()
+    var dais_mesh := CylinderMesh.new()
+    dais_mesh.top_radius = 8.6
+    dais_mesh.bottom_radius = 9.1
+    dais_mesh.height = 0.34
+    dais_mesh.radial_segments = 64
+    dais.mesh = dais_mesh
+    dais.position = Vector3(0, 0.22, -7.0)
+    dais.material_override = _pbr_stone_material(Color("#243149"), 4.0, false)
+    add_child(dais)
+    for index in range(3):
+        var step := MeshInstance3D.new()
+        var step_mesh := CylinderMesh.new()
+        step_mesh.top_radius = 6.9 - index * 1.05
+        step_mesh.bottom_radius = 7.3 - index * 1.05
+        step_mesh.height = 0.18
+        step_mesh.radial_segments = 64
+        step.mesh = step_mesh
+        step.position = Vector3(0, 0.42 + index * 0.18, -7.0)
+        step.material_override = _pbr_stone_material(Color("#30445b"), 3.0, false)
+        add_child(step)
+    var altar := MeshInstance3D.new()
+    var altar_mesh := CylinderMesh.new()
+    altar_mesh.top_radius = 1.55
+    altar_mesh.bottom_radius = 1.8
+    altar_mesh.height = 1.1
+    altar_mesh.radial_segments = 48
+    altar.mesh = altar_mesh
+    altar.position = Vector3(0, 1.12, -7.0)
+    altar.material_override = _asian_wood_shader(Color("#33466c"))
+    add_child(altar)
+    for y in [2.0, 2.32, 2.64]:
+        var energy_ring := MeshInstance3D.new()
+        var ring_mesh := TorusMesh.new()
+        ring_mesh.inner_radius = 0.74 + (y - 2.0) * 0.14
+        ring_mesh.outer_radius = 0.78 + (y - 2.0) * 0.14
+        ring_mesh.rings = 36
+        ring_mesh.ring_segments = 18
+        energy_ring.mesh = ring_mesh
+        energy_ring.position = Vector3(0, y, -7.0)
+        energy_ring.material_override = _material(Color("#71dfff"), 0.4, 0.16)
+        energy_ring.material_override.emission_enabled = true
+        energy_ring.material_override.emission = Color("#71dfff")
+        energy_ring.material_override.emission_energy_multiplier = 2.8
+        add_child(energy_ring)
+    _build_moon_gate(Vector3(0, 0, -18.0))
+    for island_data in [
+        {"position": Vector3(-18, 8.0, -22), "scale": 1.0},
+        {"position": Vector3(18, 10.0, -27), "scale": 0.78},
+        {"position": Vector3(0, 13.0, -38), "scale": 1.15}
+    ]:
+        _build_floating_island(island_data.position, float(island_data.scale))
+    var particles := GPUParticles3D.new()
+    particles.amount = 90
+    particles.lifetime = 5.0
+    particles.position = Vector3(0, 3.0, -14.0)
+    var process := ParticleProcessMaterial.new()
+    process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+    process.emission_box_extents = Vector3(24, 2.8, 16)
+    process.direction = Vector3(0, 1, 0)
+    process.spread = 20.0
+    process.initial_velocity_min = 0.12
+    process.initial_velocity_max = 0.4
+    process.gravity = Vector3.ZERO
+    process.scale_min = 0.025
+    process.scale_max = 0.09
+    particles.process_material = process
+    var spark_mesh := SphereMesh.new()
+    spark_mesh.radius = 0.035
+    spark_mesh.height = 0.07
+    spark_mesh.radial_segments = 8
+    particles.draw_pass_1 = spark_mesh
+    particles.draw_pass_1.material = _material(Color("#8ce9ff"), 0.1, 0.15)
+    particles.draw_pass_1.material.emission_enabled = true
+    particles.draw_pass_1.material.emission = Color("#8ce9ff")
+    particles.draw_pass_1.material.emission_energy_multiplier = 3.0
+    add_child(particles)
+
+func _build_moon_gate(position: Vector3) -> void:
+    for side in [-1.0, 1.0]:
+        var pillar := MeshInstance3D.new()
+        var pillar_mesh := CylinderMesh.new()
+        pillar_mesh.top_radius = 0.44
+        pillar_mesh.bottom_radius = 0.62
+        pillar_mesh.height = 7.8
+        pillar_mesh.radial_segments = 32
+        pillar.mesh = pillar_mesh
+        pillar.position = position + Vector3(3.2 * side, 3.9, 0)
+        pillar.material_override = _asian_wood_shader(Color("#3b2a43"))
+        add_child(pillar)
+        var cap := MeshInstance3D.new()
+        var cap_mesh := TorusMesh.new()
+        cap_mesh.inner_radius = 0.48
+        cap_mesh.outer_radius = 0.7
+        cap_mesh.rings = 28
+        cap_mesh.ring_segments = 16
+        cap.mesh = cap_mesh
+        cap.position = pillar.position + Vector3(0, 3.5, 0)
+        cap.material_override = _material(Color("#e2bc6e"), 0.52, 0.2)
+        add_child(cap)
+    var arch := MeshInstance3D.new()
+    var arch_mesh := TorusMesh.new()
+    arch_mesh.inner_radius = 2.55
+    arch_mesh.outer_radius = 2.85
+    arch_mesh.rings = 48
+    arch_mesh.ring_segments = 20
+    arch.mesh = arch_mesh
+    arch.position = position + Vector3(0, 5.6, 0)
+    arch.rotation_degrees.x = 90
+    arch.material_override = _material(Color("#dcb86c"), 0.62, 0.18)
+    add_child(arch)
+    var gate_light := OmniLight3D.new()
+    gate_light.position = position + Vector3(0, 5.6, 0)
+    gate_light.light_color = Color("#74dfff")
+    gate_light.light_energy = 2.1
+    gate_light.omni_range = 9.0
+    add_child(gate_light)
+
+func _build_floating_island(position: Vector3, scale_factor: float) -> void:
+    var island := Node3D.new()
+    island.position = position
+    island.scale = Vector3.ONE * scale_factor
+    add_child(island)
+    var top := MeshInstance3D.new()
+    var top_mesh := CylinderMesh.new()
+    top_mesh.top_radius = 2.8
+    top_mesh.bottom_radius = 2.35
+    top_mesh.height = 0.5
+    top_mesh.radial_segments = 48
+    top.mesh = top_mesh
+    top.material_override = _pbr_stone_material(Color("#344b54"), 2.0, false)
+    island.add_child(top)
+    var underside := MeshInstance3D.new()
+    var underside_mesh := CylinderMesh.new()
+    underside_mesh.top_radius = 2.35
+    underside_mesh.bottom_radius = 0.72
+    underside_mesh.height = 2.8
+    underside_mesh.radial_segments = 32
+    underside.mesh = underside_mesh
+    underside.position.y = -1.5
+    underside.material_override = _material(Color("#17243a"), 0.12, 0.86)
+    island.add_child(underside)
+    for index in range(3):
+        var crystal := MeshInstance3D.new()
+        var crystal_mesh := PrismMesh.new()
+        crystal_mesh.size = Vector3(0.34, 1.0 + index * 0.22, 0.34)
+        crystal.mesh = crystal_mesh
+        crystal.position = Vector3(-1.0 + index * 0.8, 0.7 + index * 0.12, 0)
+        crystal.rotation_degrees = Vector3(0, index * 38.0, -12 + index * 10)
+        crystal.material_override = _material(Color("#65cce8"), 0.38, 0.18)
+        crystal.material_override.emission_enabled = true
+        crystal.material_override.emission = Color("#65cce8")
+        crystal.material_override.emission_energy_multiplier = 2.4
+        island.add_child(crystal)
 
 func _add_glb_asset(path: String, position: Vector3, scale_value: Vector3) -> Node3D:
     var scene: PackedScene = load(path)
