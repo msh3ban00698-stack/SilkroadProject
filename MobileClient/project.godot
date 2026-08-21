@@ -1,6 +1,7 @@
 [application]
 config/name="Silkroad Mobile Client"
 run/main_scene="res://main.tscn"
+config/icon="res://icon.svg"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 
 [display]

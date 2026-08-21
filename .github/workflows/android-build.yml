@@ -94,7 +94,7 @@ jobs:
         working-directory: MobileClient
         run: |
           mkdir -p build
-          godot --headless --verbose --editor-settings-dir "$HOME/.config/godot" --path . --export-debug "Android" build/SilkroadMobile.apk
+          godot --headless --verbose --path . --export-debug "Android" build/SilkroadMobile.apk
           test -s build/SilkroadMobile.apk
           "$ANDROID_HOME/build-tools/34.0.0/zipalign" -f 4 build/SilkroadMobile.apk build/SilkroadMobile-aligned.apk
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" sign --ks "$HOME/.android/debug.keystore" --ks-pass pass:android --key-pass pass:android --ks-key-alias androiddebugkey --out build/SilkroadMobile.apk build/SilkroadMobile-aligned.apk
