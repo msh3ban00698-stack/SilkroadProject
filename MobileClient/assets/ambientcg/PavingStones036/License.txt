@@ -1,0 +1,8 @@
+PavingStones036 material maps
+
+Source: https://ambientcg.com/a/PavingStones036
+Provider: ambientCG
+License: Creative Commons CC0 1.0 Universal
+License details: https://docs.ambientcg.com/license/
+
+The original 1K JPG maps were converted to 512x512 PNG maps for Godot mobile import. The converted files are included in this folder and retain the same CC0 license.

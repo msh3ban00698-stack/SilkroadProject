@@ -15,7 +15,7 @@ func _build_animal() -> void:
     if loader_script:
         var imported_orc = loader_script.instantiate_monster()
         if imported_orc:
-            imported_orc.name = "KenneyMangyang"
+            imported_orc.name = "MangyangVisual"
             imported_orc.scale = Vector3.ONE * 3.5
             imported_orc.position = Vector3(0, 0.02, 0)
             add_child(imported_orc)
@@ -89,6 +89,11 @@ func _material(color: Color, metallic: float, roughness: float, glow := false) -
     material.albedo_color = color
     material.metallic = metallic
     material.roughness = roughness
+    material.clearcoat_enabled = true
+    material.clearcoat = 0.08
+    material.clearcoat_roughness = 0.42
+    material.anisotropy_enabled = true
+    material.anisotropy = 0.12
     if glow:
         material.emission_enabled = true
         material.emission = color

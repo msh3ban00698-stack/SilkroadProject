@@ -89,20 +89,35 @@ func _build_environment() -> void:
     environment.background_mode = Environment.BG_SKY
     var sky := Sky.new()
     var sky_material := ProceduralSkyMaterial.new()
-    sky_material.sky_top_color = Color("#101b3a")
-    sky_material.sky_horizon_color = Color("#e2a56b")
-    sky_material.ground_bottom_color = Color("#151b2c")
-    sky_material.ground_horizon_color = Color("#6e5262")
+    sky_material.sky_top_color = Color("#070f26")
+    sky_material.sky_horizon_color = Color("#d99566")
+    sky_material.ground_bottom_color = Color("#0c1424")
+    sky_material.ground_horizon_color = Color("#54404c")
     sky_material.sun_angle_max = 18.0
     sky_material.sun_curve = 0.08
     sky.sky_material = sky_material
     environment.sky = sky
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     environment.ambient_light_color = Color("#a9c9e5")
-    environment.ambient_light_energy = 0.55
+    environment.ambient_light_energy = 0.48
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-    environment.tonemap_exposure = 0.72
-    environment.tonemap_white = 1.55
+    environment.tonemap_exposure = 0.78
+    environment.tonemap_white = 1.6
+    environment.fog_enabled = true
+    environment.fog_light_color = Color("#b98a83")
+    environment.fog_light_energy = 0.42
+    environment.fog_density = 0.0065
+    environment.fog_sky_affect = 0.38
+    environment.fog_height = 1.2
+    environment.fog_height_density = 0.035
+    environment.ssao_enabled = true
+    environment.ssao_radius = 2.1
+    environment.ssao_intensity = 1.35
+    environment.ssao_power = 1.18
+    environment.adjustment_enabled = true
+    environment.adjustment_contrast = 1.08
+    environment.adjustment_saturation = 1.05
+    environment.adjustment_brightness = 0.98
     environment.glow_enabled = true
     environment.glow_intensity = 0.92
     environment.glow_strength = 0.86
@@ -120,8 +135,8 @@ func _build_environment() -> void:
     sun.shadow_enabled = true
     sun.directional_shadow_max_distance = 70.0
     sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
-    sun.shadow_blur = 1.35
-    sun.light_angular_distance = 1.2
+    sun.shadow_blur = 1.65
+    sun.light_angular_distance = 2.1
     add_child(sun)
 
     var moon_fill := DirectionalLight3D.new()
@@ -142,11 +157,11 @@ func _build_city() -> void:
     var ground := StaticBody3D.new()
     ground.name = "Ground"
     var floor := MeshInstance3D.new()
-    var floor_mesh := BoxMesh.new()
-    floor_mesh.size = Vector3(90, 0.25, 90)
+    var floor_mesh := PlaneMesh.new()
+    floor_mesh.size = Vector2(90, 90)
     floor.mesh = floor_mesh
     floor.position.y = -0.16
-    floor.material_override = _ground_shader()
+    floor.material_override = _terrain_material(Color("#6f5147"), 0.86)
     ground.add_child(floor)
     var collider := CollisionShape3D.new()
     var shape := BoxShape3D.new()
@@ -157,33 +172,27 @@ func _build_city() -> void:
     add_child(ground)
 
     var road := MeshInstance3D.new()
-    var road_mesh := BoxMesh.new()
-    road_mesh.size = Vector3(13, 0.03, 90)
+    var road_mesh := PlaneMesh.new()
+    road_mesh.size = Vector2(13, 90)
     road.mesh = road_mesh
     road.position.y = 0.01
-    road.material_override = _road_shader()
+    road.material_override = _pbr_stone_material(Color("#5b4a4c"), 10.0)
     add_child(road)
     var road_cross := MeshInstance3D.new()
-    var cross_mesh := BoxMesh.new()
-    cross_mesh.size = Vector3(90, 0.035, 10)
+    var cross_mesh := PlaneMesh.new()
+    cross_mesh.size = Vector2(90, 10)
     road_cross.mesh = cross_mesh
     road_cross.position.y = 0.015
-    road_cross.material_override = _road_shader()
+    road_cross.material_override = _terrain_material(Color("#3f353d"), 0.76)
     add_child(road_cross)
 
     var water := MeshInstance3D.new()
-    var water_mesh := BoxMesh.new()
-    water_mesh.size = Vector3(90, 0.05, 5.5)
+    var water_mesh := PlaneMesh.new()
+    water_mesh.size = Vector2(90, 5.5)
     water.mesh = water_mesh
     water.position = Vector3(0, 0.08, -24)
     water.material_override = _water_shader()
     add_child(water)
-
-    _add_glb_asset("res://assets/kenney/dungeon/floor-detail.glb", Vector3(-3.2, 0.02, -2.0), Vector3.ONE * 2.8)
-    _add_glb_asset("res://assets/kenney/dungeon/floor-detail.glb", Vector3(3.2, 0.02, -2.0), Vector3.ONE * 2.8)
-    _add_glb_asset("res://assets/kenney/dungeon/rocks.glb", Vector3(-11.0, 0.0, -12.0), Vector3.ONE * 2.4)
-    _add_glb_asset("res://assets/kenney/dungeon/rocks.glb", Vector3(11.0, 0.0, -12.0), Vector3.ONE * 2.4)
-    _add_glb_asset("res://assets/kenney/dungeon/wood-structure.glb", Vector3(0.0, 0.0, 15.0), Vector3.ONE * 2.8)
 
     for x in [-18.0, 18.0]:
         for z in [-15.0, 2.0, 19.0]:
@@ -218,7 +227,7 @@ func _build_house(position: Vector3, scale_factor: float) -> void:
     base_mesh.size = Vector3(10, 3.3, 7)
     base.mesh = base_mesh
     base.position.y = 1.65
-    base.material_override = _material(Color("#d6b081"), 0.0, 0.82)
+    base.material_override = _plaster_shader(Color("#b99b7c"))
     house.add_child(base)
     var roof := MeshInstance3D.new()
     var roof_mesh := PrismMesh.new()
@@ -226,7 +235,7 @@ func _build_house(position: Vector3, scale_factor: float) -> void:
     roof.mesh = roof_mesh
     roof.position.y = 4.25
     roof.rotation_degrees.y = 90
-    roof.material_override = _material(Color("#7a2935"), 0.05, 0.68)
+    roof.material_override = _asian_roof_shader(Color("#6e2535"))
     house.add_child(roof)
     for z in [-3.55, 3.55]:
         var trim := MeshInstance3D.new()
@@ -234,7 +243,7 @@ func _build_house(position: Vector3, scale_factor: float) -> void:
         trim_mesh.size = Vector3(10.8, 0.22, 0.22)
         trim.mesh = trim_mesh
         trim.position = Vector3(0, 3.25, z)
-        trim.material_override = _material(Color("#e6c978"), 0.25, 0.42)
+        trim.material_override = _asian_wood_shader(Color("#9c6b3c"))
         house.add_child(trim)
     for x in [-2.8, 0, 2.8]:
         var window := MeshInstance3D.new()
@@ -242,7 +251,7 @@ func _build_house(position: Vector3, scale_factor: float) -> void:
         window_mesh.size = Vector3(1.2, 1.25, 0.08)
         window.mesh = window_mesh
         window.position = Vector3(x, 1.9, -3.56)
-        window.material_override = _material(Color("#4db3c2"), 0.35, 0.18)
+        window.material_override = _material(Color("#315a68"), 0.38, 0.16)
         house.add_child(window)
 
 func _build_tree(position: Vector3, scale_factor: float) -> void:
@@ -299,14 +308,14 @@ func _build_gate(position: Vector3) -> void:
         pillar_mesh.size = Vector3(1.4, 7.0, 1.4)
         pillar.mesh = pillar_mesh
         pillar.position = position + Vector3(x, 3.5, 0)
-        pillar.material_override = _material(Color("#a63f42"), 0.0, 0.72)
+        pillar.material_override = _asian_wood_shader(Color("#7e2e39"))
         add_child(pillar)
     var beam := MeshInstance3D.new()
     var beam_mesh := BoxMesh.new()
     beam_mesh.size = Vector3(13, 1.35, 1.5)
     beam.mesh = beam_mesh
     beam.position = position + Vector3(0, 6.8, 0)
-    beam.material_override = _material(Color("#8b2d36"), 0.05, 0.68)
+    beam.material_override = _asian_wood_shader(Color("#632432"))
     add_child(beam)
     var sign := Label3D.new()
     sign.text = "長安  JANGAN"
@@ -325,7 +334,7 @@ func _build_bridge(position: Vector3) -> void:
         plank.mesh = plank_mesh
         plank.position = position + Vector3(0, 0.4 + sin(float(i) / 7.0 * PI) * 0.5, -3.0 + i * 0.85)
         plank.rotation_degrees.x = -sin(float(i) / 7.0 * PI) * 7.0
-        plank.material_override = _material(Color("#8d5c3f"), 0.0, 0.88)
+        plank.material_override = _asian_wood_shader(Color("#72452f"))
         add_child(plank)
 
 func _build_market(position: Vector3) -> void:
@@ -334,7 +343,7 @@ func _build_market(position: Vector3) -> void:
     table_mesh.size = Vector3(8, 0.35, 3)
     table.mesh = table_mesh
     table.position = position + Vector3(0, 1.1, 0)
-    table.material_override = _material(Color("#75432e"), 0.0, 0.9)
+    table.material_override = _asian_wood_shader(Color("#68402e"))
     add_child(table)
     for x in [-3.5, 3.5]:
         var leg := MeshInstance3D.new()
@@ -344,14 +353,14 @@ func _build_market(position: Vector3) -> void:
         leg_mesh.height = 2.2
         leg.mesh = leg_mesh
         leg.position = position + Vector3(x, 0.1, 0)
-        leg.material_override = _material(Color("#5d382a"), 0.0, 0.95)
+        leg.material_override = _asian_wood_shader(Color("#553329"))
         add_child(leg)
     var canopy := MeshInstance3D.new()
     var canopy_mesh := BoxMesh.new()
     canopy_mesh.size = Vector3(9, 0.22, 4)
     canopy.mesh = canopy_mesh
     canopy.position = position + Vector3(0, 3.7, 0)
-    canopy.material_override = _material(Color("#d65d52"), 0.0, 0.78)
+    canopy.material_override = _fabric_shader(Color("#8f3340"), Color("#c37a54"))
     add_child(canopy)
 
 func _spawn_player() -> void:
@@ -625,25 +634,149 @@ func _collect_nearest_drop() -> void:
     else:
         hud.set_status("No loot nearby")
 
-func _ground_shader() -> ShaderMaterial:
-    return _pattern_shader(Color("#9c795f"), Color("#b99468"), 24.0, 0.035)
+func _ground_shader() -> Material:
+    return _material(Color("#6f5147"), 0.02, 0.86)
 
-func _road_shader() -> ShaderMaterial:
-    return _pattern_shader(Color("#4b3f4a"), Color("#6f5a55"), 10.0, 0.018)
+func _road_shader() -> Material:
+    return _terrain_material(Color("#51434a"), 0.76)
+
+func _terrain_material(color: Color, roughness: float) -> StandardMaterial3D:
+    var material := StandardMaterial3D.new()
+    material.albedo_color = color
+    material.metallic = 0.0
+    material.roughness = clampf(roughness, 0.0, 1.0)
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+    material.cull_mode = BaseMaterial3D.CULL_BACK
+    material.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+    return material
+
+func _plaster_shader(tint: Color) -> ShaderMaterial:
+    var shader := Shader.new()
+    shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+uniform vec4 base_color : source_color;
+void fragment() {
+    float grain = sin(UV.x * 180.0) * sin(UV.y * 160.0);
+    float soft = 0.86 + grain * 0.035;
+    ALBEDO = base_color.rgb * soft;
+    ROUGHNESS = 0.78;
+    SPECULAR = 0.24;
+}
+"""
+    var material := ShaderMaterial.new()
+    material.shader = shader
+    material.set_shader_parameter("base_color", tint)
+    return material
+
+func _asian_roof_shader(tint: Color) -> ShaderMaterial:
+    var shader := Shader.new()
+    shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+uniform vec4 base_color : source_color;
+void fragment() {
+    float tile = 0.91 + 0.09 * sin(UV.x * 92.0 + sin(UV.y * 11.0));
+    float ridge = smoothstep(0.42, 0.5, abs(fract(UV.x * 16.0) - 0.5));
+    ALBEDO = base_color.rgb * tile * (0.88 + ridge * 0.12);
+    ROUGHNESS = 0.58;
+    METALLIC = 0.04;
+    SPECULAR = 0.42;
+}
+"""
+    var material := ShaderMaterial.new()
+    material.shader = shader
+    material.set_shader_parameter("base_color", tint)
+    return material
+
+func _asian_wood_shader(tint: Color) -> ShaderMaterial:
+    var shader := Shader.new()
+    shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+uniform vec4 base_color : source_color;
+void fragment() {
+    float grain = 0.86 + 0.14 * sin(UV.y * 120.0 + sin(UV.x * 14.0) * 4.0);
+    ALBEDO = base_color.rgb * grain;
+    ROUGHNESS = 0.64;
+    SPECULAR = 0.32;
+}
+"""
+    var material := ShaderMaterial.new()
+    material.shader = shader
+    material.set_shader_parameter("base_color", tint)
+    return material
+
+func _fabric_shader(primary: Color, secondary: Color) -> ShaderMaterial:
+    var shader := Shader.new()
+    shader.code = """
+shader_type spatial;
+render_mode diffuse_burley, specular_schlick_ggx;
+uniform vec4 primary_color : source_color;
+uniform vec4 secondary_color : source_color;
+void fragment() {
+    float warp = step(0.5, fract(UV.x * 80.0));
+    float weft = step(0.5, fract(UV.y * 80.0));
+    float weave = mix(0.92, 1.08, abs(warp - weft));
+    ALBEDO = mix(primary_color.rgb, secondary_color.rgb, weave * 0.18) * weave;
+    ROUGHNESS = 0.72;
+    SPECULAR = 0.3;
+}
+"""
+    var material := ShaderMaterial.new()
+    material.shader = shader
+    material.set_shader_parameter("primary_color", primary)
+    material.set_shader_parameter("secondary_color", secondary)
+    return material
+
+func _pbr_stone_material(tint: Color, uv_scale: float, use_color_texture := true) -> StandardMaterial3D:
+    var material := StandardMaterial3D.new()
+    if use_color_texture:
+        material.albedo_texture = _texture_or_fallback("res://assets/ambientcg/PavingStones036/PavingStones036_Color.png", Color("#8a6d5d"))
+    material.albedo_color = tint
+    material.uv1_scale = Vector3(uv_scale, uv_scale, uv_scale)
+    material.normal_enabled = true
+    material.normal_texture = _texture_or_fallback("res://assets/ambientcg/PavingStones036/PavingStones036_NormalGL.png", Color("#8080ff"))
+    material.normal_scale = 0.52
+    material.roughness_texture = _texture_or_fallback("res://assets/ambientcg/PavingStones036/PavingStones036_Roughness.png", Color("#b0b0b0"))
+    material.roughness = 0.78
+    material.ao_enabled = true
+    material.ao_texture = _texture_or_fallback("res://assets/ambientcg/PavingStones036/PavingStones036_AmbientOcclusion.png", Color("#f0f0f0"))
+    material.metallic = 0.02
+    material.clearcoat_enabled = true
+    material.clearcoat = 0.08
+    material.clearcoat_roughness = 0.48
+    return material
+
+func _texture_or_fallback(path: String, fallback_color: Color) -> Texture2D:
+    if ResourceLoader.exists(path, "Texture2D"):
+        var loaded = ResourceLoader.load(path)
+        if loaded is Texture2D:
+            return loaded
+    var image := Image.create(2, 2, false, Image.FORMAT_RGBA8)
+    image.fill(fallback_color)
+    return ImageTexture.create_from_image(image)
 
 func _water_shader() -> ShaderMaterial:
     var shader := Shader.new()
     shader.code = """
 shader_type spatial;
-render_mode diffuse_burley, cull_disabled;
-uniform vec4 deep_color : source_color = vec4(0.04, 0.26, 0.42, 1.0);
-uniform vec4 light_color : source_color = vec4(0.12, 0.55, 0.68, 1.0);
+render_mode blend_mix, depth_prepass_alpha, cull_disabled, diffuse_burley, specular_schlick_ggx;
+uniform vec4 deep_color : source_color = vec4(0.018, 0.12, 0.22, 1.0);
+uniform vec4 reflected_color : source_color = vec4(0.12, 0.42, 0.48, 1.0);
 void fragment() {
-    float wave = sin(UV.x * 48.0 + TIME * 1.8) * 0.08 + sin(UV.y * 31.0 - TIME * 1.3) * 0.06;
-    ALBEDO = mix(deep_color.rgb, light_color.rgb, clamp(UV.y + wave, 0.0, 1.0));
-    METALLIC = 0.15;
-    ROUGHNESS = 0.2;
-    EMISSION = light_color.rgb * 0.12;
+    vec2 flow_a = UV * vec2(10.0, 3.0) + vec2(TIME * 0.018, TIME * 0.032);
+    vec2 flow_b = UV * vec2(17.0, 5.0) - vec2(TIME * 0.026, TIME * 0.015);
+    float wave = sin(flow_a.x + sin(flow_a.y * 2.0)) * 0.055 + cos(flow_b.y + flow_b.x * 0.7) * 0.035;
+    float fresnel = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), 2.0);
+    vec3 water_color = mix(deep_color.rgb, reflected_color.rgb, clamp(UV.y + wave * 2.0, 0.0, 1.0));
+    ALBEDO = mix(water_color, reflected_color.rgb * 1.2, fresnel * 0.38);
+    NORMAL = normalize(vec3(wave * 1.8, 1.0, wave * 1.2));
+    METALLIC = 0.24;
+    ROUGHNESS = 0.13;
+    SPECULAR = 0.92;
+    EMISSION = reflected_color.rgb * (0.045 + abs(wave) * 0.18);
+    ALPHA = 0.88;
 }
 """
     var material := ShaderMaterial.new()
@@ -680,4 +813,9 @@ func _material(color: Color, metallic: float, roughness: float) -> StandardMater
     material.albedo_color = color
     material.metallic = metallic
     material.roughness = roughness
+    material.clearcoat_enabled = true
+    material.clearcoat = 0.12 if roughness > 0.55 else 0.28
+    material.clearcoat_roughness = 0.34
+    material.anisotropy_enabled = roughness > 0.7
+    material.anisotropy = 0.08 if roughness > 0.7 else 0.0
     return material

@@ -16,7 +16,7 @@
 
 عند اختيار شخصية، يرسل العميل `0x7001` ثم يستقبل تحميل الشخصية والإحصاءات، وبعد الضغط على الدخول يرسل `0x3012`. عالم البداية الإجرائي موجود في `starter_world.gd` ويحتوي على بوابة، مبانٍ آسيوية، سوق، أشجار، فوانيس، قناة وجسر. اللاعب `MobilePlayer` يستخدم `VirtualJoystick` للتحكم اللمسي وكاميرا `SpringArm3D` للتتبع، بينما `MobileHUD` يعرض HP/MP وMinimap وأزرار الهجوم والجرعة والمهارة.
 
-اختبار التشغيل headless ينشئ العالم واللاعب والـHUD بنجاح. لا يحتوي المشروع على أصول Silkroad الأصلية؛ يعتمد المسار الافتراضي على أصول Kenney CC0 المحلية، مع fallback إجرائي مملوك للمشروع عند تعذر استيراد GLB.
+اختبار التشغيل headless ينشئ العالم واللاعب والـHUD بنجاح. لا يحتوي المشروع على أصول Silkroad الأصلية أو حزمة low-poly خارجية؛ يعتمد المسار الافتراضي على rigs إجرائية متناسبة ومواد ambientCG CC0، مع خرائط PBR فعلية للأرض.
 
 ## Phase 3: Combat, monsters, and loot
 
@@ -44,7 +44,7 @@
 
 يستخرج مسار Android ملف `SilkroadMobile-debug-apk`، ويستخرج مسار Windows مجلد `SilkroadServer-Compiled` الذي يحتوي على ملفات GatewayServer وSR_GameServer وDLLs المطلوبة. يستهدف Workflow الخادم .NET Framework 4.8 في بيئة CI الحديثة، مع بقاء ملفات المشاريع الأصلية مستهدفة للإصدار القديم عند الحاجة إلى توافق الخادم.
 
-> لا يتضمن المشروع أصول Silkroad الأصلية. النماذج المرئية الافتراضية في Phase 7 هي أصول Kenney CC0 المحلية، وتبقى الأجزاء الإجرائية fallback متوافقاً مع Godot 4.3+.
+> لا يتضمن المشروع أصول Silkroad الأصلية أو حزمة Kenney/low-poly. Phase 8 يركز على مظهر Asian Fantasy شبه واقعي عبر خامات PBR ومواد قماش/خشب/معدن وإضاءة سينمائية، مع rigs إجرائية كحل مستقل قابل للتعديل.
 
 أثناء البناء، يجب مراجعة سجل Actions؛ إذا فشل تجميع الخادم بسبب اعتماديات قديمة في المصدر، يظل مسار Android مستقلاً ويمكن تنزيل APK منه، بينما يحتاج Workflow الخادم إلى إصلاح المصدر أو توفير Targeting Pack مناسب قبل تشغيله على VPS.
 
@@ -66,8 +66,8 @@
 
 The Android client now uses a mandatory 1920×1080 Landscape viewport with `viewport` stretch mode and `expand` aspect. The runtime UI is anchored to full rect, top-left, top-right, bottom-left, bottom-right, or centered presets so login, character selection, HUD, minimap, joystick, skill panel, and inventory remain usable across expanded Android aspect ratios without portrait-only black bars.
 
-The project includes a small local subset of **Kenney CC0** GLB assets under `assets/kenney/`: `character-human.glb` for Wizard and Spear characters, `character-orc.glb` for Mangyang visuals, `weapon-spear.glb` for Spear and Wizard staff styling, and `floor-detail.glb`, `rocks.glb`, and `wood-structure.glb` for world dressing. Each asset group includes its `License.txt`. The official sources are [Kenney Animated Characters Protagonists](https://kenney.nl/assets/animated-characters-protagonists) and [Kenney Mini Dungeon](https://kenney.nl/assets/mini-dungeon).
+Phase 8 removes the previous low-poly GLB pack from the default runtime. The local visual material set now uses ambientCG's CC0 `PavingStones036` albedo, normal, roughness, and ambient-occlusion maps under `assets/ambientcg/PavingStones036/`. The official sources are [ambientCG](https://ambientcg.com/) and its [CC0 license](https://docs.ambientcg.com/license/).
 
-`asset_loader.gd` is the single integration point for these GLB scenes. `HumanoidModel` and `AnimalMobModel` prefer imported assets and retain procedural fallback code only for environments where an asset import is unavailable. The Wizard uses a downloaded weapon model with an Arcane Orb VFX, while the Spear uses the downloaded spear model. StarterWorld uses the imported props alongside the textured/procedural ground and procedural skybox.
+`asset_loader.gd` documents and centralizes the ambientCG PBR material source. `HumanoidModel` and `AnimalMobModel` use the built-in proportional rigs, with fabric, leather, skin, wood, and metal response tuned for cinematic lighting. StarterWorld applies the ambientCG PBR stone material to the main road, keeps the broad courtyard/terrain on Compatibility-safe StandardMaterial3D surfaces, uses a reflective animated river shader, and builds Asian-inspired procedural architecture rather than blocky dungeon props.
 
-The original procedural or rigged fallback remains in source to preserve compatibility with Godot 4.3+, but the default mobile path uses the imported GLB assets. A local Xvfb capture validated a 1920×1080 Landscape CharacterSelect and StarterWorld transition without the earlier portrait-only black bars.
+The proportional procedural rigs remain the default visual path and preserve compatibility with Godot 4.3+. Smoke tests confirm the world and mandatory character-selection flow. The local Xvfb capture confirms the 1920×1080 Landscape layout, sunset environment, water strip, PBR road, anchored HUD, and successful rendering; a separate red checkerboard foreground artifact remains isolated to the software-renderer capture path and is documented in `PHASE8_CHECKERBOARD_FINDINGS.md`, while the runtime scripts produce no parse or gameplay errors.

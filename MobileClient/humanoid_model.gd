@@ -61,7 +61,7 @@ func _build_imported_model() -> bool:
     if imported_model == null:
         return false
     imported_mode = true
-    imported_model.name = "KenneyHumanoid"
+    imported_model.name = "ImportedHumanoid"
     imported_model.scale = Vector3.ONE * 2.0
     add_child(imported_model)
     _tint_imported_model()
@@ -145,8 +145,18 @@ func _tint_imported_model() -> void:
     var skin := Color("#c98968") if race_name.to_lower().contains("european") else Color("#d49a75")
     var cloth := Color("#456fb4") if weapon_style == "wizard" else Color("#2f8a75")
     for mesh in imported_model.find_children("*", "MeshInstance3D", true, false):
-        var color := skin if str(mesh.name).to_lower().contains("head") else cloth
-        mesh.material_override = _material(color, 0.05, 0.72)
+        var source_material = mesh.get_active_material(0)
+        if source_material is StandardMaterial3D:
+            var material: StandardMaterial3D = source_material.duplicate()
+            material.roughness = 0.58 if str(mesh.name).to_lower().contains("cloth") else 0.68
+            material.metallic = 0.12 if str(mesh.name).to_lower().contains("armor") else 0.025
+            material.clearcoat_enabled = true
+            material.clearcoat = 0.18
+            material.clearcoat_roughness = 0.32
+            mesh.material_override = material
+        else:
+            var color := skin if str(mesh.name).to_lower().contains("head") else cloth
+            mesh.material_override = _material(color, 0.025, 0.68)
 
 func _tint_weapon(weapon: Node3D) -> void:
     var accent := Color("#8edbff") if weapon_style == "wizard" else Color("#e5bb5f")
@@ -330,6 +340,11 @@ func _material(color: Color, metallic: float, roughness: float, glow := false) -
     material.albedo_color = color
     material.metallic = metallic
     material.roughness = roughness
+    material.clearcoat_enabled = true
+    material.clearcoat = 0.16 if metallic < 0.4 else 0.42
+    material.clearcoat_roughness = 0.28
+    material.anisotropy_enabled = metallic < 0.25
+    material.anisotropy = 0.18 if metallic < 0.25 else 0.0
     if glow:
         material.emission_enabled = true
         material.emission = color

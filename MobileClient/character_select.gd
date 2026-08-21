@@ -33,30 +33,43 @@ func _build_preview() -> void:
     env.background_mode = Environment.BG_SKY
     var sky := Sky.new()
     var sky_material := ProceduralSkyMaterial.new()
-    sky_material.sky_top_color = Color("#101a3b")
-    sky_material.sky_horizon_color = Color("#d58d65")
-    sky_material.ground_bottom_color = Color("#121727")
-    sky_material.ground_horizon_color = Color("#6d5160")
+    sky_material.sky_top_color = Color("#070f26")
+    sky_material.sky_horizon_color = Color("#d99566")
+    sky_material.ground_bottom_color = Color("#0c1424")
+    sky_material.ground_horizon_color = Color("#54404c")
     sky.sky_material = sky_material
     env.sky = sky
     env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
     env.ambient_light_color = Color("#8ca6d9")
-    env.ambient_light_energy = 0.8
+    env.ambient_light_energy = 0.52
     env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+    env.tonemap_exposure = 0.82
+    env.tonemap_white = 1.6
+    env.fog_enabled = true
+    env.fog_light_color = Color("#b98a83")
+    env.fog_light_energy = 0.36
+    env.fog_density = 0.006
+    env.fog_sky_affect = 0.4
+    env.ssao_enabled = true
+    env.ssao_radius = 1.6
+    env.ssao_intensity = 1.15
+    env.adjustment_enabled = true
+    env.adjustment_contrast = 1.06
+    env.adjustment_saturation = 1.04
     environment.environment = env
     add_child(environment)
 
     var key := DirectionalLight3D.new()
     key.rotation_degrees = Vector3(-38, -28, 0)
     key.light_color = Color("#ffe2b0")
-    key.light_energy = 1.6
+    key.light_energy = 0.82
     key.shadow_enabled = true
     add_child(key)
 
     var fill := OmniLight3D.new()
     fill.position = Vector3(1.5, 2.0, 2.0)
     fill.light_color = Color("#5ca9ff")
-    fill.light_energy = 3.0
+    fill.light_energy = 1.15
     fill.omni_range = 8.0
     add_child(fill)
 
