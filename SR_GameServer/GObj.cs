@@ -602,7 +602,7 @@
         
         public void StartDisappear(int time)
         {
-            m_disapperTimer.Start(time, 0);
+            m_disapperTimer.Start((uint)Math.Max(0, time), 0);
         }
 
         #endregion
@@ -628,14 +628,14 @@
                         m_hasDestination = false;
                         m_hasAngleMovement = false;
                         m_direction = Vector2.Zero;
-                        m_movementTimer.Reset(-1, 0);
+                        m_movementTimer.Change(-1, 0);
                         Logging.Log()("movement has ended", LogLevel.Success);
                     }
                     else
                     {
                         float arrivalT = m_destination.ToGameWorld(m_destinationRegion).Distance(m_position.ToGameWorld(m_region)) / (this.Speed / Formula.WORLD_SCALE) * 1000f;
                         if (arrivalT < 1000f)
-                            m_movementTimer.Reset((int)arrivalT, 0, true);
+                            m_movementTimer.Change((int)arrivalT, 0, true);
                     }
                 }
 
@@ -645,7 +645,7 @@
                 if (Data.NavMesh.Collision.Test(m_region, old_pos.ToVector3(m_position.Y), m_position, out result))
                 {
                     m_position = old_pos.ToVector3(m_position.Y);
-                    m_movementTimer.Reset(-1, 0);
+                    m_movementTimer.Change(-1, 0);
                     m_movementType = MovementType.NotMoving;
                     m_hasDestination = false;
                     m_hasAngleMovement = false;
@@ -662,10 +662,10 @@
                     {
                         float arrivalT = result.ToGameWorld(m_region).Distance(m_position.ToGameWorld(m_region)) / (this.Speed / Formula.WORLD_SCALE) * 1000f - 100f;
                         if (arrivalT > 250)
-                            m_movementTimer.Reset((int)arrivalT, 0, true);
+                            m_movementTimer.Change((int)arrivalT, 0, true);
                         else
                         {
-                            m_movementTimer.Reset(0, 0, true);
+                            m_movementTimer.Change(0, 0, true);
                             m_movementType = MovementType.NotMoving;
                             m_hasDestination = false;
                             m_hasAngleMovement = false;

@@ -40,7 +40,7 @@ func _build() -> void:
     close.pressed.connect(func(): visible = false)
     header.add_child(close)
     var hint := Label.new()
-    hint.text = "Items confirmed by Agent"
+    hint.text = "Loot collected locally or confirmed by Agent"
     hint.add_theme_color_override("font_color", Color("#9eb2d5"))
     content.add_child(hint)
     list = VBoxContainer.new()

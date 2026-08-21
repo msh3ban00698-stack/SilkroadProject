@@ -29,3 +29,26 @@
 يستخدم `starter_world.gd` الآن `WorldEnvironment` بإعدادات HDR Filmic وBloom/Glow، مع DirectionalLight3D بظلال متعددة التقسيمات وsoft shadow blur، وإضاءة ذهبية محيطية حول منطقة اللعب. يضيف `combat_vfx.gd` مسار Slash Trail ذهبيًا عند زر الهجوم وتأثير موت سحريًا بحلقات متلاشية، بينما يعرض `floating_damage.gd` أرقامًا أكبر بخط واضح وoutline داكن وحركة صعودية مع Fade out.
 
 أصبح `MobileHUD` بطابع Dark & Gold مع حدود ذهبية وحالات hover/pressed للأزرار وأشرطة HP/MP وهدف الوحش. يبني `.github/workflows/android-build.yml` APK كالعادة، بينما يبني `.github/workflows/windows-server-build.yml` مشروعي `GatewayServer` و`SR_GameServer` عبر MSBuild على `windows-latest` ويرفع مجلد binaries باسم `SilkroadServer-Compiled`. الـArtifact مخصص للتشغيل على Windows/VPS Windows؛ لا يحتوي إعدادات قاعدة البيانات أو ملفات العالم السرية، ويجب ضبطها قبل التشغيل.
+
+## Phase 4: Full Offline Test Mode
+
+تحتوي شاشة الدخول الآن على زر `PLAY OFFLINE (TEST MODE)`. هذا المسار لا ينشئ اتصال TCP ولا يحتاج Gateway أو Agent؛ بل يفتح العالم الإجرائي مباشرة مع شخصية `Offline Tester` وثلاثة وحوش Mangyang محلية تتحرك في دوريات تلقائية.
+
+في وضع الاختبار يعمل زر `ATTACK` بحساب ضرر محلي، ويشغّل Slash VFX وFloating Damage وتأثير موت الوحش، ثم يسقط `Mangyang Hide`. زر `PICKUP` أو لمس الغنيمة يضيف العنصر إلى الحقيبة، ويمنح القتل EXP وGold ويحدّث المستوى وشريط الخبرة، كما تعود الوحوش للظهور بعد فترة قصيرة. يمكن تحديد الوحش باللمس، واستخدام العصا الافتراضية والحركة والكاميرا والخريطة المصغرة دون خادم.
+
+للاختبار الآلي من سطر الأوامر استخدم `godot --headless --path MobileClient --offline --quit-after 5`. أما على الهاتف أو داخل المحرر فاضغط الزر من شاشة الدخول. وضع Offline مخصص للتحقق المحلي ولا يمثل توازناً نهائياً أو اقتصاداً معتمداً من الخادم.
+
+يظهر في HUD شريط `LV / EXP` وشارة `OFFLINE TEST` مع مظهر Dark & Gold، بينما تبقى واجهة اللعب الشبكي متاحة عبر زر الاتصال المعتاد.
+
+## Build artifacts
+
+يستخرج مسار Android ملف `SilkroadMobile-debug-apk`، ويستخرج مسار Windows مجلد `SilkroadServer-Compiled` الذي يحتوي على ملفات GatewayServer وSR_GameServer وDLLs المطلوبة. يستهدف Workflow الخادم .NET Framework 4.8 في بيئة CI الحديثة، مع بقاء ملفات المشاريع الأصلية مستهدفة للإصدار القديم عند الحاجة إلى توافق الخادم.
+
+> لا يتضمن المشروع أصول Silkroad الأصلية؛ جميع مشاهد العالم والوحوش والمؤثرات الحالية إجرائية ومبنية داخل Godot.
+
+أثناء البناء، يجب مراجعة سجل Actions؛ إذا فشل تجميع الخادم بسبب اعتماديات قديمة في المصدر، يظل مسار Android مستقلاً ويمكن تنزيل APK منه، بينما يحتاج Workflow الخادم إلى إصلاح المصدر أو توفير Targeting Pack مناسب قبل تشغيله على VPS.
+
+## References
+
+[1]: https://docs.godotengine.org/en/4.3/ "Godot Engine documentation"
+[2]: https://docs.github.com/en/actions "GitHub Actions documentation"

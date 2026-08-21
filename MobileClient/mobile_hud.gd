@@ -6,6 +6,7 @@ signal inventory_requested()
 
 var hp_bar: ProgressBar
 var mp_bar: ProgressBar
+var exp_bar: ProgressBar
 var hp_label: Label
 var mp_label: Label
 var minimap: MinimapView
@@ -14,6 +15,8 @@ var status_label: Label
 var target_panel: VBoxContainer
 var target_bar: ProgressBar
 var target_label: Label
+var exp_label: Label
+var offline_badge: Label
 
 func _ready() -> void:
     layer = 20
@@ -50,9 +53,24 @@ func _build_hud() -> void:
     mp_label.add_theme_font_size_override("font_size", 13)
     mp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     mp_bar.add_child(mp_label)
+    exp_bar = _bar(top, Color("#b98b42"))
+    exp_bar.custom_minimum_size = Vector2(300, 18)
+    exp_label = Label.new()
+    exp_label.text = "LV 1  •  EXP 0 / 100"
+    exp_label.position = Vector2(12, 14)
+    exp_label.add_theme_font_size_override("font_size", 11)
+    exp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+    exp_bar.add_child(exp_label)
+    offline_badge = Label.new()
+    offline_badge.text = "OFFLINE TEST"
+    offline_badge.visible = false
+    offline_badge.position = Vector2(24, 142)
+    offline_badge.add_theme_font_size_override("font_size", 13)
+    offline_badge.add_theme_color_override("font_color", Color("#ffe09a"))
+    root.add_child(offline_badge)
     _build_target_panel(root)
 
-    var minimap := MinimapView.new()
+    minimap = MinimapView.new()
     minimap.position = Vector2(-8, 18)
     minimap.anchor_left = 1.0
     minimap.anchor_right = 1.0
@@ -177,6 +195,17 @@ func _action_button(parent: HBoxContainer, text: String, action: String, color: 
             action_requested.emit(action)
     )
     parent.add_child(button)
+
+func set_offline_mode(enabled: bool) -> void:
+    if offline_badge:
+        offline_badge.visible = enabled
+
+func set_exp(current: int, required: int, level: int) -> void:
+    if exp_bar:
+        exp_bar.max_value = max(1, required)
+        exp_bar.value = clamp(current, 0, required)
+    if exp_label:
+        exp_label.text = "LV %d  •  EXP %d / %d" % [level, current, required]
 
 func set_stats(hp: int, mp: int, max_hp: int, max_mp: int) -> void:
     hp_bar.max_value = max(1, max_hp)

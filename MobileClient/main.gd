@@ -9,6 +9,7 @@ var password_edit: LineEdit
 var locale_edit: SpinBox
 var shard_edit: SpinBox
 var login_button: Button
+var offline_button: Button
 var status_label: Label
 var result_label: Label
 var character_select: CharacterSelect
@@ -27,7 +28,9 @@ func _ready() -> void:
     protocol.stats_updated.connect(_on_stats_updated)
     protocol.world_ready.connect(_on_world_ready)
     _build_login_ui()
-    _on_status_changed("Ready. Connect to Gateway to begin Phase 2 character flow.")
+    _on_status_changed("Ready. Connect to Gateway, or launch the complete local test world.")
+    if "--offline" in OS.get_cmdline_args():
+        call_deferred("_on_offline_pressed")
 
 func _process(_delta: float) -> void:
     if protocol:
@@ -76,6 +79,14 @@ func _build_login_ui() -> void:
     login_button.add_theme_font_size_override("font_size", 20)
     login_button.pressed.connect(_on_login_pressed)
     content.add_child(login_button)
+    offline_button = Button.new()
+    offline_button.text = "PLAY OFFLINE (TEST MODE)"
+    offline_button.custom_minimum_size = Vector2(0, 58)
+    offline_button.add_theme_font_size_override("font_size", 18)
+    offline_button.add_theme_color_override("font_color", Color("#ffe6a0"))
+    offline_button.add_theme_color_override("font_hover_color", Color("#ffffff"))
+    offline_button.pressed.connect(_on_offline_pressed)
+    content.add_child(offline_button)
     result_label = Label.new()
     result_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
     result_label.add_theme_font_size_override("font_size", 17)
@@ -119,6 +130,29 @@ func _add_number_field(parent: VBoxContainer, caption: String, value: float, min
     spin.add_theme_font_size_override("font_size", 17)
     parent.add_child(spin)
     return spin
+
+func _on_offline_pressed() -> void:
+    login_button.disabled = true
+    offline_button.disabled = true
+    result_label.text = "OFFLINE TEST MODE"
+    result_label.add_theme_color_override("font_color", Color("#ffd36e"))
+    _enter_world_offline()
+
+func _enter_world_offline() -> void:
+    if starter_world:
+        return
+    starter_world = StarterWorld.new()
+    starter_world.set_offline_mode(true)
+    add_child(starter_world)
+    starter_world.set_character({
+        "name": "Offline Tester",
+        "hp": 100,
+        "mp": 100,
+        "level": 1,
+        "exp": 0,
+        "gold": 0
+    })
+    login_layer.visible = false
 
 func _on_login_pressed() -> void:
     var host := host_edit.text.strip_edges()

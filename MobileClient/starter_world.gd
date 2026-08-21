@@ -2,6 +2,7 @@ class_name StarterWorld
 extends Node3D
 
 var protocol: SROProtocol
+var offline_mode := false
 var player: MobilePlayer
 var hud: MobileHUD
 var movement_cooldown := 0.0
@@ -10,13 +11,24 @@ var monsters: Dictionary = {}
 var drops: Dictionary = {}
 var selected_target_id := 0
 var inventory_ui: InventoryUI
+var offline_exp := 0
+var offline_level := 1
+var offline_gold := 0
+var offline_kills := 0
+var offline_time := 0.0
 
 func _ready() -> void:
     _build_environment()
     _build_city()
     _spawn_player()
     _spawn_hud()
-    _spawn_demo_monsters()
+    if offline_mode:
+        _spawn_demo_monsters()
+
+func set_offline_mode(value: bool) -> void:
+    offline_mode = value
+    if hud:
+        hud.set_offline_mode(offline_mode)
 
 func set_protocol(value: SROProtocol) -> void:
     protocol = value
@@ -33,13 +45,21 @@ func set_character(data: Dictionary) -> void:
         hud.set_status("Welcome %s — explore the Jangan outskirts" % data.get("name", "Traveler"))
         var hp := int(data.get("hp", 100))
         var mp := int(data.get("mp", 100))
+        offline_level = int(data.get("level", offline_level))
+        offline_exp = int(data.get("exp", offline_exp))
+        offline_gold = int(data.get("gold", offline_gold))
         hud.set_stats(hp, mp, max(100, hp), max(100, mp))
+        hud.set_exp(offline_exp, _exp_to_next(), offline_level)
+        hud.set_offline_mode(offline_mode)
 
 func _process(delta: float) -> void:
     movement_cooldown = max(0.0, movement_cooldown - delta)
     if player and hud:
         hud.set_world_position(player.global_position)
-    if player and protocol and movement_cooldown <= 0.0 and player.velocity.length() > 0.2:
+    if offline_mode:
+        offline_time += delta
+        _simulate_offline(delta)
+    if player and protocol and not offline_mode and movement_cooldown <= 0.0 and player.velocity.length() > 0.2:
         var p := player.global_position
         protocol.send_move_to(0, int(p.x), int(p.y), int(p.z))
         movement_cooldown = 0.25
@@ -308,6 +328,24 @@ func _spawn_hud() -> void:
 func _spawn_demo_monsters() -> void:
     _spawn_monster({"unique_id": 900001, "model": 1, "kind": "monster", "name": "Mangyang Scout", "position": Vector3(-3, 0, -2), "hp": 120, "max_hp": 120, "rarity": 0}, true)
     _spawn_monster({"unique_id": 900002, "model": 1, "kind": "monster", "name": "Mangyang Scout", "position": Vector3(4, 0, -6), "hp": 120, "max_hp": 120, "rarity": 1}, true)
+    _spawn_monster({"unique_id": 900003, "model": 1, "kind": "monster", "name": "Mangyang Brute", "position": Vector3(8, 0, 2), "hp": 180, "max_hp": 180, "rarity": 2}, true)
+
+func _simulate_offline(delta: float) -> void:
+    for uid in monsters.keys():
+        var monster: MonsterMob = monsters[uid]
+        if is_instance_valid(monster) and monster.local_demo and not monster.defeated:
+            monster.simulate_local_ai(delta, offline_time)
+
+func _exp_to_next() -> int:
+    return 100 + (offline_level - 1) * 60
+
+func _grant_offline_exp(amount: int) -> void:
+    offline_exp += amount
+    while offline_exp >= _exp_to_next():
+        offline_exp -= _exp_to_next()
+        offline_level += 1
+        hud.set_status("LEVEL UP! You reached level %d" % offline_level)
+    hud.set_exp(offline_exp, _exp_to_next(), offline_level)
 
 func _spawn_monster(data: Dictionary, demo: bool = false) -> void:
     var uid := int(data.get("unique_id", 0))
@@ -362,7 +400,7 @@ func _on_monster_targeted(unique_id: int) -> void:
         var monster: MonsterMob = monsters[unique_id]
         monster.set_targeted(true)
         hud.set_target(monster.monster_name, monster.hp, monster.max_hp)
-        if protocol:
+        if protocol and not offline_mode:
             protocol.select_entity(unique_id)
         hud.set_status("Target locked: %s" % monster.monster_name)
 
@@ -383,7 +421,7 @@ func _on_action(action: String) -> void:
         if selected_target_id == 0:
             hud.set_status("Select a Mangyang first")
             return
-        if protocol:
+        if protocol and not offline_mode:
             protocol.attack_target(selected_target_id)
         if monsters.has(selected_target_id) and monsters[selected_target_id].local_demo:
             _apply_local_demo_attack()
@@ -434,6 +472,9 @@ func _finish_monster(monster: MonsterMob) -> void:
     monster.play_defeat()
     CombatVFX.spawn_death_effect(self, defeated_position)
     if monster.local_demo:
+        offline_kills += 1
+        offline_gold += 12 + monster.rarity * 8
+        _grant_offline_exp(35 + monster.rarity * 15)
         var drop_data := {"unique_id": monster.unique_id + 1000000, "model": 9001, "position": defeated_position, "name": "Mangyang Hide"}
         _spawn_drop(drop_data)
     selected_target_id = 0
@@ -441,10 +482,15 @@ func _finish_monster(monster: MonsterMob) -> void:
     hud.set_status("Mangyang defeated — loot dropped")
     await get_tree().create_timer(0.82).timeout
     if is_instance_valid(monster):
-        _on_entity_despawned(monster.unique_id)
+        var respawn_id := monster.unique_id
+        var respawn_position := defeated_position
+        _on_entity_despawned(respawn_id)
+        if offline_mode:
+            await get_tree().create_timer(1.8).timeout
+            _spawn_monster({"unique_id": respawn_id, "model": 1, "kind": "monster", "name": "Mangyang Scout", "position": respawn_position, "hp": 120, "max_hp": 120, "rarity": 0}, true)
 
 func _on_drop_requested(unique_id: int) -> void:
-    if protocol:
+    if protocol and not offline_mode:
         protocol.pickup_item(unique_id)
     if drops.has(unique_id) and int(unique_id) >= 1000000:
         var drop: DropItem3D = drops[unique_id]

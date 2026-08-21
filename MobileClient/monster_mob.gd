@@ -19,6 +19,8 @@ var destination := Vector3.ZERO
 var moving := false
 var move_tween: Tween
 var defeated := false
+var ai_phase := 0.0
+var home_position := Vector3.ZERO
 
 func _ready() -> void:
     input_ray_pickable = true
@@ -46,6 +48,8 @@ func configure_demo(demo_id: int, position: Vector3) -> void:
     hp = 120
     max_hp = 120
     local_demo = true
+    home_position = position
+    ai_phase = float(demo_id % 17) * 0.37
     if is_inside_tree():
         global_position = position
     else:
@@ -165,6 +169,15 @@ func set_hp(current: int, maximum: int = -1) -> void:
 
 func apply_damage(damage: int) -> void:
     set_hp(hp - damage)
+
+func simulate_local_ai(delta: float, elapsed: float) -> void:
+    if not local_demo or defeated:
+        return
+    ai_phase += delta * (0.45 + float(rarity) * 0.08)
+    var patrol := Vector3(sin(elapsed * 0.55 + ai_phase) * 1.8, 0, cos(elapsed * 0.42 + ai_phase) * 1.2)
+    var next_position := home_position + patrol
+    global_position = global_position.lerp(next_position, clamp(delta * 2.4, 0.0, 1.0))
+    rotation.y = lerp_angle(rotation.y, atan2(patrol.x, patrol.z), clamp(delta * 3.0, 0.0, 1.0))
 
 func apply_movement(movement: Dictionary) -> void:
     if movement.get("mode", 0) == 1:
