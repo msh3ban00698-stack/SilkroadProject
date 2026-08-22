@@ -118,10 +118,6 @@ func _build_environment() -> void:
     environment.fog_sky_affect = 0.38
     environment.fog_height = 1.2
     environment.fog_height_density = 0.035
-    environment.ssao_enabled = true
-    environment.ssao_radius = 2.1
-    environment.ssao_intensity = 1.35
-    environment.ssao_power = 1.18
     environment.adjustment_enabled = true
     environment.adjustment_contrast = 1.08
     environment.adjustment_saturation = 1.05
@@ -224,6 +220,7 @@ func _build_city() -> void:
     _build_bridge(Vector3(0, 0, -24))
     _build_market(Vector3(0, 0, 10))
     _build_celestial_sanctum()
+    _scatter_cc0_props()
 
 func _build_celestial_sanctum() -> void:
     var dais := MeshInstance3D.new()
@@ -591,10 +588,78 @@ func _build_bridge(position: Vector3) -> void:
         plank.material_override = _wood_grain_material(Color("#72452f"))
         add_child(plank)
 
+func _scatter_cc0_props() -> void:
+    var tree := load("res://assets/cc0/tree_default.glb")
+    var rock_a := load("res://assets/cc0/rock_largeA.glb")
+    var rock_c := load("res://assets/cc0/rock_largeC.glb")
+    var flower_p := load("res://assets/cc0/flower_purpleA.glb")
+    var flower_r := load("res://assets/cc0/flower_redB.glb")
+    var grass := load("res://assets/cc0/grass_large.glb")
+    var campfire := load("res://assets/cc0/campfire_stones.glb")
+    var fence := load("res://assets/cc0/fence_planks.glb")
+    var placed := 0
+    var tree_spots := [Vector3(-33, 0, 14), Vector3(33, 0, 14), Vector3(-33, 0, -2), Vector3(33, 0, -2), Vector3(-12, 0, 31), Vector3(12, 0, 31), Vector3(-38, 0, -18), Vector3(38, 0, -18)]
+    for spot in tree_spots:
+        if tree:
+            var instance: Node3D = tree.instantiate()
+            instance.position = spot
+            instance.rotation_degrees.y = fmod(abs(spot.x * 37.0 + spot.z * 11.0), 360.0)
+            instance.scale = Vector3.ONE * (0.9 + fmod(abs(spot.z), 3.0) * 0.1)
+            add_child(instance)
+            placed += 1
+    var rock_spots := [Vector3(-14, 0, -20), Vector3(14, 0, -20), Vector3(-6, 0, 25), Vector3(6, 0, 25), Vector3(-20, 0, 6), Vector3(20, 0, 6)]
+    for index in range(rock_spots.size()):
+        var rock_scene = rock_a if index % 2 == 0 else rock_c
+        if rock_scene:
+            var instance: Node3D = rock_scene.instantiate()
+            instance.position = rock_spots[index]
+            instance.rotation_degrees.y = float(index * 47 % 360)
+            instance.scale = Vector3.ONE * (0.8 + float(index % 3) * 0.18)
+            add_child(instance)
+            placed += 1
+    var scatter := [
+        [-16.0, -13.0, flower_p, 0.5], [16.0, -13.0, flower_r, 0.5],
+        [-16.0, -12.0, flower_r, 0.6], [16.0, -12.0, flower_p, 0.6],
+        [-22.0, 8.0, flower_p, 0.7], [22.0, 8.0, flower_r, 0.7],
+        [-24.0, 20.0, flower_r, 0.55], [24.0, 20.0, flower_p, 0.55],
+        [-9.0, 16.0, grass, 0.9], [9.0, 16.0, grass, 0.9],
+        [-11.0, 22.0, grass, 1.0], [11.0, 22.0, grass, 1.0],
+        [-28.0, -6.0, grass, 0.8], [28.0, -6.0, grass, 0.8],
+    ]
+    for entry in scatter:
+        var pos_x: float = entry[0]
+        var pos_z: float = entry[1]
+        var scene = entry[2]
+        var s: float = entry[3]
+        if scene:
+            var instance: Node3D = scene.instantiate()
+            instance.position = Vector3(pos_x, 0, pos_z)
+            instance.rotation_degrees.y = float(int(abs(pos_x) * 53 + abs(pos_z) * 29) % 360)
+            instance.scale = Vector3.ONE * s
+            add_child(instance)
+            placed += 1
+    if campfire:
+        var campfire_positions := [Vector3(-4.5, 0, 8), Vector3(4.5, 0, 8)]
+        for fire_pos in campfire_positions:
+            var instance: Node3D = campfire.instantiate()
+            instance.position = fire_pos
+            instance.scale = Vector3.ONE * 0.9
+            add_child(instance)
+            placed += 1
+    if fence:
+        var fence_positions := [Vector3(-12, 0, 26), Vector3(12, 0, 26), Vector3(-12, 0, 27), Vector3(12, 0, 27)]
+        for fence_pos in fence_positions:
+            var instance: Node3D = fence.instantiate()
+            instance.position = fence_pos
+            instance.rotation_degrees.y = 0 if fence_pos.x < 0 else 180
+            add_child(instance)
+            placed += 1
+    print("CC0_PLACED=", placed)
+
 func _build_market(position: Vector3) -> void:
     var table := MeshInstance3D.new()
     var table_mesh := BoxMesh.new()
-    table_mesh.size = Vector3(8, 0.35, 3)
+    table_mesh.size = Vector3(6, 0.14, 2.2)
     table.mesh = table_mesh
     table.position = position + Vector3(0, 1.1, 0)
     table.material_override = _wood_grain_material(Color("#68402e"))
