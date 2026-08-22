@@ -1,0 +1,109 @@
+class_name MonsterVisualAdapter
+extends Node3D
+
+## Phase 10.2 adapter that owns a monster rig (Skeleton3D + AnimationPlayer +
+## BoneAttachment3D sockets) and maps logical animation states to per-asset clips.
+## Mirrors the public surface of animal_mob_model.gd so gameplay callers are unchanged.
+
+const MANGYANG_ASSET_KEY := "monsters/eastern/mangyang_01"
+
+var asset_key := MANGYANG_ASSET_KEY
+var rig_root: Node3D
+var skeleton: Skeleton3D
+var animation_player: AnimationPlayer
+var sockets: Dictionary = {}
+var animation_map: Dictionary = {}
+var socket_map: Dictionary = {}
+
+var rarity := 0
+
+var _attack_timer := 0.0
+var _attack_duration := 0.8
+var _base_animation := "idle"
+
+func configure_animal(value: int = 0) -> void:
+	rarity = value
+	_rebuild()
+
+func _rebuild() -> void:
+	for child in get_children():
+		remove_child(child)
+		child.free()
+	rig_root = null
+	skeleton = null
+	animation_player = null
+	sockets.clear()
+	animation_map = VisualAssetLoader.animation_map(asset_key)
+	socket_map = VisualAssetLoader.socket_map(asset_key)
+	rig_root = VisualAssetLoader.instantiate(asset_key)
+	if rig_root == null:
+		push_error("MonsterVisualAdapter: no visual for %s" % asset_key)
+		return
+	rig_root.name = "Rig"
+	add_child(rig_root)
+	animation_player = rig_root.find_child("AnimationPlayer", true, false) as AnimationPlayer
+	if animation_player:
+		for clip in animation_map.values():
+			if animation_player.has_animation(clip):
+				var anim: Animation = animation_player.get_animation(clip)
+				anim.loop_mode = Animation.LOOP_LINEAR
+		_play_clip("idle")
+	skeleton = rig_root.find_child("Skeleton3D", true, false) as Skeleton3D
+	_build_sockets()
+
+func _build_sockets() -> void:
+	if skeleton == null:
+		return
+	for logical_name in socket_map:
+		var bone_name := str(socket_map[logical_name])
+		var existing := skeleton.find_child(logical_name, true, false)
+		if existing is BoneAttachment3D:
+			sockets[logical_name] = existing
+			continue
+		var index := skeleton.find_bone(bone_name)
+		if index == -1:
+			index = _find_bone_substring(bone_name)
+		if index == -1:
+			continue
+		var mount := BoneAttachment3D.new()
+		mount.name = logical_name
+		mount.bone_name = skeleton.get_bone_name(index)
+		skeleton.add_child(mount)
+		sockets[logical_name] = mount
+
+func _find_bone_substring(needle: String) -> int:
+	if skeleton == null:
+		return -1
+	var lower := needle.to_lower()
+	for index in range(skeleton.get_bone_count()):
+		var bone := skeleton.get_bone_name(index).to_lower()
+		if bone == lower or bone.contains(lower):
+			return index
+	return -1
+
+func _play_clip(logical: String) -> void:
+	var clip := str(animation_map.get(logical, logical))
+	if animation_player and animation_player.has_animation(clip):
+		animation_player.play(clip)
+
+func set_animation_state(state: String) -> void:
+	if _attack_timer > 0.0:
+		return
+	_base_animation = "walk" if state == "walk" else "idle"
+	_play_clip(_base_animation)
+
+func play_attack() -> void:
+	_attack_timer = _attack_duration
+	_play_clip("attack")
+
+func _process(delta: float) -> void:
+	if _attack_timer > 0.0:
+		_attack_timer = max(0.0, _attack_timer - delta)
+		if _attack_timer <= 0.0:
+			_play_clip(_base_animation)
+
+func socket(logical_name: String) -> Node3D:
+	return sockets.get(logical_name) as Node3D
+
+func get_visual_root() -> Node3D:
+	return rig_root

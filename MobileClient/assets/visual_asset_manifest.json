@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "provider": "self-generated glTF/GLB + ambientCG CC0",
+  "license": "GLB models generated in-repo; ambientCG ground maps are CC0 1.0 Universal",
+  "generator": "res://tools/generate_glb_models.py",
+  "assets": [
+    {
+      "asset_key": "characters/eastern/eastern_spear_warrior",
+      "path": "res://assets/models/humanoid_spear.glb",
+      "type": "humanoid",
+      "base_scale": 1.0,
+      "position_offset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "rotation_offset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "animation_map": { "idle": "idle", "walk": "walk", "attack": "attack" },
+      "socket_map": { "weapon_r": "hand_r", "weapon_l": "hand_l", "head": "head", "back": "spine" },
+      "fallback_key": "characters/western/western_wizard",
+      "two_handed": true
+    },
+    {
+      "asset_key": "characters/western/western_wizard",
+      "path": "res://assets/models/humanoid_wizard.glb",
+      "type": "humanoid",
+      "base_scale": 1.0,
+      "position_offset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "rotation_offset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "animation_map": { "idle": "idle", "walk": "walk", "attack": "attack" },
+      "socket_map": { "weapon_r": "hand_r", "weapon_l": "hand_l", "head": "head", "back": "spine" },
+      "fallback_key": "characters/eastern/eastern_spear_warrior",
+      "two_handed": false
+    },
+    {
+      "asset_key": "monsters/eastern/mangyang_01",
+      "path": "res://assets/models/monster_mangyang.glb",
+      "type": "monster",
+      "base_scale": 2.6,
+      "position_offset": { "x": 0.0, "y": 0.02, "z": 0.0 },
+      "rotation_offset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "animation_map": { "idle": "idle", "walk": "walk", "attack": "attack" },
+      "socket_map": { "head": "head" },
+      "fallback_key": "characters/eastern/eastern_spear_warrior",
+      "two_handed": false
+    },
+    {
+      "asset_key": "weapons/spear/eastern_spear_01",
+      "path": "res://assets/models/weapon_spear.glb",
+      "type": "weapon",
+      "base_scale": 1.0,
+      "position_offset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "rotation_offset": { "x": 0.0, "y": 0.0, "z": -8.0 },
+      "animation_map": {},
+      "socket_map": {},
+      "fallback_key": "weapons/staff/western_staff_01",
+      "two_handed": true
+    },
+    {
+      "asset_key": "weapons/staff/western_staff_01",
+      "path": "res://assets/models/weapon_staff.glb",
+      "type": "weapon",
+      "base_scale": 1.0,
+      "position_offset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+      "rotation_offset": { "x": 0.0, "y": 0.0, "z": -8.0 },
+      "animation_map": {},
+      "socket_map": {},
+      "fallback_key": "weapons/spear/eastern_spear_01",
+      "two_handed": false
+    }
+  ]
+}
