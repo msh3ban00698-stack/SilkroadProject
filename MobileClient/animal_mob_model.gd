@@ -51,21 +51,6 @@ func _build_imported_animal() -> void:
                 anim.loop_mode = Animation.LOOP_LINEAR
         _animation_player.play("idle")
 
-    var skeleton := imported.find_child("Skeleton3D", true, false) as Skeleton3D
-    if skeleton:
-        var collar := skeleton.find_child("*", true, false) as MeshInstance3D
-        if collar:
-            var material := collar.get_active_material(0) as StandardMaterial3D
-            if material:
-                var accent_material: StandardMaterial3D = material.duplicate()
-                accent_material.albedo_color = Color("#e8c777")
-                accent_material.metallic = 0.5
-                accent_material.roughness = 0.2
-                accent_material.emission_enabled = true
-                accent_material.emission = Color("#e8c777")
-                accent_material.emission_energy_multiplier = 1.5
-                collar.material_override = accent_material
-
 func _play_base_animation() -> void:
     if _animation_player and _animation_player.has_animation(_base_animation):
         _animation_player.play(_base_animation)

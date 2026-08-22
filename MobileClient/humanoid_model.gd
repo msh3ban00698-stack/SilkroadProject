@@ -87,12 +87,12 @@ func _tint_weapon(weapon: Node3D) -> void:
     for mesh in weapon.find_children("*", "MeshInstance3D", true, false):
         var material := mesh.get_active_material(0) as StandardMaterial3D
         if material == null:
-            material = StandardMaterial3D.new()
+            continue
         var tinted: StandardMaterial3D = material.duplicate()
-        tinted.albedo_color = accent
-        tinted.metallic = 0.55
-        tinted.roughness = 0.24
-        tinted.emission_enabled = true
-        tinted.emission = accent
-        tinted.emission_energy_multiplier = 1.8
+        var albedo := tinted.albedo_color as Color
+        albedo = albedo.lerp(accent, 0.18)
+        tinted.albedo_color = albedo
+        tinted.metallic = 0.35
+        tinted.roughness = 0.3
+        tinted.emission_enabled = false
         mesh.material_override = tinted

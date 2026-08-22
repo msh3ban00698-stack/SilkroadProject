@@ -98,8 +98,8 @@ func _build_environment() -> void:
     sky.sky_material = sky_material
     environment.sky = sky
     environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    environment.ambient_light_color = Color("#7894c4")
-    environment.ambient_light_energy = 0.4
+    environment.ambient_light_color = Color("#d8b08c")
+    environment.ambient_light_energy = 0.5
     environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     environment.tonemap_exposure = 0.78
     environment.tonemap_white = 1.6
@@ -161,7 +161,7 @@ func _build_city() -> void:
     floor_mesh.size = Vector2(90, 90)
     floor.mesh = floor_mesh
     floor.position.y = -0.16
-    floor.material_override = _terrain_material(Color("#6f5147"), 0.86)
+    floor.material_override = _textured_ground_material()
     ground.add_child(floor)
     var collider := CollisionShape3D.new()
     var shape := BoxShape3D.new()
@@ -192,7 +192,7 @@ func _build_city() -> void:
     cross_mesh.size = Vector2(90, 10)
     road_cross.mesh = cross_mesh
     road_cross.position.y = 0.015
-    road_cross.material_override = _terrain_material(Color("#3f353d"), 0.76)
+    road_cross.material_override = _textured_ground_material()
     add_child(road_cross)
 
     var water := MeshInstance3D.new()
@@ -247,7 +247,7 @@ func _build_celestial_sanctum() -> void:
     altar_mesh.radial_segments = 48
     altar.mesh = altar_mesh
     altar.position = Vector3(0, 1.12, -7.0)
-    altar.material_override = _asian_wood_shader(Color("#33466c"))
+    altar.material_override = _wood_grain_material(Color("#33466c"))
     add_child(altar)
     for y in [2.0, 2.32, 2.64]:
         var energy_ring := MeshInstance3D.new()
@@ -306,7 +306,7 @@ func _build_moon_gate(position: Vector3) -> void:
         pillar_mesh.radial_segments = 32
         pillar.mesh = pillar_mesh
         pillar.position = position + Vector3(3.2 * side, 3.9, 0)
-        pillar.material_override = _asian_wood_shader(Color("#3b2a43"))
+        pillar.material_override = _wood_grain_material(Color("#3b2a43"))
         add_child(pillar)
         var cap := MeshInstance3D.new()
         var cap_mesh := TorusMesh.new()
@@ -395,22 +395,38 @@ func _build_house(position: Vector3, scale_factor: float) -> void:
     base.position.y = 1.65
     base.material_override = _plaster_shader(Color("#b99b7c"))
     house.add_child(base)
-    var roof := MeshInstance3D.new()
-    var roof_mesh := PrismMesh.new()
-    roof_mesh.size = Vector3(11.2, 2.0, 8.2)
-    roof.mesh = roof_mesh
-    roof.position.y = 4.25
-    roof.rotation_degrees.y = 90
-    roof.material_override = _asian_roof_shader(Color("#6e2535"))
-    house.add_child(roof)
     for z in [-3.55, 3.55]:
         var trim := MeshInstance3D.new()
         var trim_mesh := BoxMesh.new()
         trim_mesh.size = Vector3(10.8, 0.22, 0.22)
         trim.mesh = trim_mesh
         trim.position = Vector3(0, 3.25, z)
-        trim.material_override = _asian_wood_shader(Color("#9c6b3c"))
+        trim.material_override = _wood_grain_material(Color("#9c6b3c"))
         house.add_child(trim)
+    var roof := MeshInstance3D.new()
+    var roof_mesh := PrismMesh.new()
+    roof_mesh.size = Vector3(11.4, 2.0, 8.4)
+    roof.mesh = roof_mesh
+    roof.position.y = 4.25
+    roof.rotation_degrees.y = 90
+    roof.material_override = _roof_tile_material(Color("#7e2f3e"))
+    house.add_child(roof)
+    var ridge := MeshInstance3D.new()
+    var ridge_mesh := BoxMesh.new()
+    ridge_mesh.size = Vector3(11.6, 0.26, 0.32)
+    ridge.mesh = ridge_mesh
+    ridge.position = Vector3(0, 5.32, 0)
+    ridge.material_override = _wood_grain_material(Color("#8a5430"))
+    house.add_child(ridge)
+    for side in [-1.0, 1.0]:
+        var eave := MeshInstance3D.new()
+        var eave_mesh := BoxMesh.new()
+        eave_mesh.size = Vector3(1.1, 0.16, 0.5)
+        eave.mesh = eave_mesh
+        eave.position = Vector3(side * 5.35, 3.1, 0)
+        eave.rotation_degrees.z = side * 38.0
+        eave.material_override = _wood_grain_material(Color("#8a5430"))
+        house.add_child(eave)
     for x in [-2.8, 0, 2.8]:
         var window := MeshInstance3D.new()
         var window_mesh := BoxMesh.new()
@@ -419,6 +435,15 @@ func _build_house(position: Vector3, scale_factor: float) -> void:
         window.position = Vector3(x, 1.9, -3.56)
         window.material_override = _material(Color("#315a68"), 0.38, 0.16)
         house.add_child(window)
+    for side in [-1.0, 1.0]:
+        for z in [-3.3, 3.3]:
+            var beam := MeshInstance3D.new()
+            var beam_mesh := BoxMesh.new()
+            beam_mesh.size = Vector3(0.5, 0.24, 0.24)
+            beam.mesh = beam_mesh
+            beam.position = Vector3(side * 4.75, 2.5, z)
+            beam.material_override = _wood_grain_material(Color("#7a4a2c"))
+            house.add_child(beam)
 
 func _build_tree(position: Vector3, scale_factor: float) -> void:
     var trunk := MeshInstance3D.new()
@@ -450,21 +475,52 @@ func _build_lantern(position: Vector3) -> void:
     pole_mesh.height = 2.8
     pole.mesh = pole_mesh
     pole.position = position + Vector3(0, 1.4, 0)
-    pole.material_override = _material(Color("#3b2930"), 0.55, 0.3)
+    pole.material_override = _wood_grain_material(Color("#3b2930"))
     add_child(pole)
-    var lamp := MeshInstance3D.new()
-    var lamp_mesh := SphereMesh.new()
-    lamp_mesh.radius = 0.32
-    lamp_mesh.height = 0.64
-    lamp.mesh = lamp_mesh
-    lamp.position = position + Vector3(0, 2.65, 0)
-    lamp.material_override = _material(Color("#ffd76b"), 0.2, 0.16)
-    add_child(lamp)
+    var body := MeshInstance3D.new()
+    var body_mesh := CylinderMesh.new()
+    body_mesh.top_radius = 0.34
+    body_mesh.bottom_radius = 0.34
+    body_mesh.height = 0.72
+    body_mesh.radial_segments = 28
+    body.mesh = body_mesh
+    body.position = position + Vector3(0, 2.62, 0)
+    body.material_override = _paper_lantern_material()
+    add_child(body)
+    for i in range(6):
+        var rib := MeshInstance3D.new()
+        var rib_mesh := CylinderMesh.new()
+        rib_mesh.top_radius = 0.345
+        rib_mesh.bottom_radius = 0.345
+        rib_mesh.height = 0.74
+        rib_mesh.radial_segments = 10
+        rib.mesh = rib_mesh
+        rib.position = body.position
+        rib.rotation_degrees.y = float(i) * 30.0
+        rib.material_override = _wood_grain_material(Color("#7a3c26"))
+        add_child(rib)
+    var cap := MeshInstance3D.new()
+    var cap_mesh := CylinderMesh.new()
+    cap_mesh.top_radius = 0.12
+    cap_mesh.bottom_radius = 0.32
+    cap_mesh.height = 0.2
+    cap.mesh = cap_mesh
+    cap.position = position + Vector3(0, 3.06, 0)
+    cap.material_override = _wood_grain_material(Color("#8a5430"))
+    add_child(cap)
+    var finial := MeshInstance3D.new()
+    var finial_mesh := SphereMesh.new()
+    finial_mesh.radius = 0.09
+    finial_mesh.height = 0.18
+    finial.mesh = finial_mesh
+    finial.position = position + Vector3(0, 3.2, 0)
+    finial.material_override = _material(Color("#e2bc6e"), 0.5, 0.24)
+    add_child(finial)
     var glow := OmniLight3D.new()
-    glow.position = lamp.position
+    glow.position = body.position
     glow.light_color = Color("#ffc85e")
-    glow.light_energy = 1.2
-    glow.omni_range = 5.0
+    glow.light_energy = 1.5
+    glow.omni_range = 6.0
     add_child(glow)
 
 func _build_gate(position: Vector3) -> void:
@@ -474,15 +530,39 @@ func _build_gate(position: Vector3) -> void:
         pillar_mesh.size = Vector3(1.4, 7.0, 1.4)
         pillar.mesh = pillar_mesh
         pillar.position = position + Vector3(x, 3.5, 0)
-        pillar.material_override = _asian_wood_shader(Color("#7e2e39"))
+        pillar.material_override = _wood_grain_material(Color("#7e2e39"))
         add_child(pillar)
     var beam := MeshInstance3D.new()
     var beam_mesh := BoxMesh.new()
     beam_mesh.size = Vector3(13, 1.35, 1.5)
     beam.mesh = beam_mesh
     beam.position = position + Vector3(0, 6.8, 0)
-    beam.material_override = _asian_wood_shader(Color("#632432"))
+    beam.material_override = _wood_grain_material(Color("#632432"))
     add_child(beam)
+    var gate_roof := MeshInstance3D.new()
+    var gate_roof_mesh := PrismMesh.new()
+    gate_roof_mesh.size = Vector3(15.5, 2.4, 4.2)
+    gate_roof.mesh = gate_roof_mesh
+    gate_roof.position = position + Vector3(0, 8.4, 0)
+    gate_roof.rotation_degrees.y = 90
+    gate_roof.material_override = _roof_tile_material(Color("#7e2f3e"))
+    add_child(gate_roof)
+    var gate_ridge := MeshInstance3D.new()
+    var gate_ridge_mesh := BoxMesh.new()
+    gate_ridge_mesh.size = Vector3(15.8, 0.3, 0.38)
+    gate_ridge.mesh = gate_ridge_mesh
+    gate_ridge.position = position + Vector3(0, 9.72, 0)
+    gate_ridge.material_override = _wood_grain_material(Color("#8a5430"))
+    add_child(gate_ridge)
+    for side in [-1.0, 1.0]:
+        var gate_eave := MeshInstance3D.new()
+        var gate_eave_mesh := BoxMesh.new()
+        gate_eave_mesh.size = Vector3(1.3, 0.18, 0.6)
+        gate_eave.mesh = gate_eave_mesh
+        gate_eave.position = position + Vector3(side * 7.45, 6.6, 0)
+        gate_eave.rotation_degrees.z = side * 34.0
+        gate_eave.material_override = _wood_grain_material(Color("#8a5430"))
+        add_child(gate_eave)
     var sign := Label3D.new()
     sign.text = "長安  JANGAN"
     sign.font_size = 48
@@ -500,7 +580,7 @@ func _build_bridge(position: Vector3) -> void:
         plank.mesh = plank_mesh
         plank.position = position + Vector3(0, 0.4 + sin(float(i) / 7.0 * PI) * 0.5, -3.0 + i * 0.85)
         plank.rotation_degrees.x = -sin(float(i) / 7.0 * PI) * 7.0
-        plank.material_override = _asian_wood_shader(Color("#72452f"))
+        plank.material_override = _wood_grain_material(Color("#72452f"))
         add_child(plank)
 
 func _build_market(position: Vector3) -> void:
@@ -509,7 +589,7 @@ func _build_market(position: Vector3) -> void:
     table_mesh.size = Vector3(8, 0.35, 3)
     table.mesh = table_mesh
     table.position = position + Vector3(0, 1.1, 0)
-    table.material_override = _asian_wood_shader(Color("#68402e"))
+    table.material_override = _wood_grain_material(Color("#68402e"))
     add_child(table)
     for x in [-3.5, 3.5]:
         var leg := MeshInstance3D.new()
@@ -519,7 +599,7 @@ func _build_market(position: Vector3) -> void:
         leg_mesh.height = 2.2
         leg.mesh = leg_mesh
         leg.position = position + Vector3(x, 0.1, 0)
-        leg.material_override = _asian_wood_shader(Color("#553329"))
+        leg.material_override = _wood_grain_material(Color("#553329"))
         add_child(leg)
     var canopy := MeshInstance3D.new()
     var canopy_mesh := BoxMesh.new()
@@ -528,6 +608,20 @@ func _build_market(position: Vector3) -> void:
     canopy.position = position + Vector3(0, 3.7, 0)
     canopy.material_override = _fabric_shader(Color("#8f3340"), Color("#c37a54"))
     add_child(canopy)
+    var canopy_roof := MeshInstance3D.new()
+    var canopy_roof_mesh := PrismMesh.new()
+    canopy_roof_mesh.size = Vector3(10.5, 1.4, 5.2)
+    canopy_roof.mesh = canopy_roof_mesh
+    canopy_roof.position = position + Vector3(0, 4.5, 0)
+    canopy_roof.rotation_degrees.y = 90
+    canopy_roof.material_override = _roof_tile_material(Color("#7e2f3e"))
+    add_child(canopy_roof)
+    var market_light := OmniLight3D.new()
+    market_light.position = position + Vector3(0, 4.6, 0)
+    market_light.light_color = Color("#ffd9a0")
+    market_light.light_energy = 0.9
+    market_light.omni_range = 9.0
+    add_child(market_light)
 
 func _spawn_player() -> void:
     player = MobilePlayer.new()
@@ -922,6 +1016,51 @@ func _texture_or_fallback(path: String, fallback_color: Color) -> Texture2D:
     var image := Image.create(2, 2, false, Image.FORMAT_RGBA8)
     image.fill(fallback_color)
     return ImageTexture.create_from_image(image)
+
+func _load_procedural_texture(name: String, fallback_color: Color) -> Texture2D:
+    var path := "res://assets/textures/%s.png" % name
+    return _texture_or_fallback(path, fallback_color)
+
+func _textured_ground_material() -> StandardMaterial3D:
+    var material := StandardMaterial3D.new()
+    material.albedo_texture = _load_procedural_texture("stone", Color("#6f5147"))
+    material.albedo_color = Color("#e8d8b8")
+    material.uv1_scale = Vector3(9.0, 9.0, 9.0)
+    material.metallic = 0.0
+    material.roughness = 0.9
+    material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+    return material
+
+func _roof_tile_material(tint: Color) -> StandardMaterial3D:
+    var material := StandardMaterial3D.new()
+    material.albedo_texture = _load_procedural_texture("roof", tint)
+    material.albedo_color = tint
+    material.uv1_scale = Vector3(3.0, 2.0, 2.0)
+    material.metallic = 0.04
+    material.roughness = 0.58
+    material.specular = 0.4
+    return material
+
+func _wood_grain_material(tint: Color) -> StandardMaterial3D:
+    var material := StandardMaterial3D.new()
+    material.albedo_texture = _load_procedural_texture("wood", tint)
+    material.albedo_color = tint
+    material.uv1_scale = Vector3(1.6, 1.6, 1.6)
+    material.metallic = 0.0
+    material.roughness = 0.66
+    material.specular = 0.3
+    return material
+
+func _paper_lantern_material() -> StandardMaterial3D:
+    var material := StandardMaterial3D.new()
+    material.albedo_texture = _load_procedural_texture("lantern", Color("#ffd76b"))
+    material.albedo_color = Color("#ffe9b0")
+    material.emission_enabled = true
+    material.emission_texture = material.albedo_texture
+    material.emission_energy_multiplier = 1.5
+    material.metallic = 0.0
+    material.roughness = 0.42
+    return material
 
 func _water_shader() -> ShaderMaterial:
     var shader := Shader.new()
