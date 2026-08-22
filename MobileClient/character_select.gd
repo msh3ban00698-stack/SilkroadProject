@@ -24,8 +24,15 @@ var selected_slot := -1
 var offline_mode := false
 
 func _ready() -> void:
-    _build_preview()
+    # Android hotfix: paint the selection UI first; defer 3D preview construction.
     _build_ui()
+    call_deferred("_build_preview_after_first_frame")
+
+func _build_preview_after_first_frame() -> void:
+    if not is_inside_tree():
+        return
+    _build_preview()
+    _refresh_preview()
 
 func _build_preview() -> void:
     var environment := WorldEnvironment.new()

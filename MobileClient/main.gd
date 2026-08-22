@@ -29,7 +29,15 @@ func _ready() -> void:
     protocol.stats_updated.connect(_on_stats_updated)
     protocol.world_ready.connect(_on_world_ready)
     _build_login_ui()
-    _on_status_changed("Select a character build to begin your journey, or connect to Gateway.")
+    # Android hotfix: render the mandatory Character Select screen before any heavy preview/world work.
+    login_layer.visible = false
+    offline_mode = true
+    call_deferred("_boot_character_select_first_frame")
+
+func _boot_character_select_first_frame() -> void:
+    _show_character_select(true)
+    if character_select:
+        character_select.set_status("Choose a name and build, then enter the sanctum.")
 
 func _process(_delta: float) -> void:
     if protocol:
