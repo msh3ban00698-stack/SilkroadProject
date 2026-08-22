@@ -124,8 +124,19 @@ func set_hp(current: int, maximum: int = -1) -> void:
         max_hp = maximum
     _refresh_hp()
 
+func _process(_delta: float) -> void:
+    if body_visual and body_visual.has_method("set_animation_state"):
+        if defeated:
+            body_visual.set_animation_state("idle")
+        elif moving or local_demo:
+            body_visual.set_animation_state("walk")
+        else:
+            body_visual.set_animation_state("idle")
+
 func apply_damage(damage: int) -> void:
     set_hp(hp - damage)
+    if body_visual and body_visual.has_method("play_attack"):
+        body_visual.play_attack()
 
 func simulate_local_ai(delta: float, elapsed: float) -> void:
     if not local_demo or defeated:

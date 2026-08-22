@@ -1,4 +1,5 @@
 extends Node
+class_name CombatVFX
 
 static func spawn_weapon_slash(parent: Node3D, origin: Vector3, facing: float) -> void:
     var effect := Node3D.new()

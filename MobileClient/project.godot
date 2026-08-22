@@ -1,27 +1,38 @@
+; Silkroad Mobile Client - Godot project configuration.
+; GL Compatibility pipeline is enforced for every rendering method so that
+; Android / mobile devices boot through OpenGL 3 without a heavy shader
+; backend, preventing the launch black-screen crash.
+
 [application]
+
 config/name="Silkroad Mobile Client"
-run/main_scene="res://main.tscn"
+run/main_scene="res://boot.tscn"
 config/icon="res://icon.svg"
-config/features=PackedStringArray("4.3", "GL Compatibility")
+config/features=PackedStringArray("4.4", "GL Compatibility")
 
 [display]
+
 window/size/viewport_width=1920
 window/size/viewport_height=1080
 window/size/window_width_override=1920
 window/size/window_height_override=1080
 window/stretch/mode="viewport"
 window/stretch/aspect="expand"
+; handheld orientation 0 == SCREEN_LANDSCAPE (forced landscape).
 window/handheld/orientation=0
 window/size/resizable=true
 
 [rendering]
+
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.035, 0.047, 0.075, 1)
 textures/vram_compression/import_etc2_astc=true
 
 [android]
+
 permissions/internet=true
 
 [input]
+
 ui_accept={"deadzone": 0.5, "events": [Object(InputEventKey,"physical_keycode":4194309)]}

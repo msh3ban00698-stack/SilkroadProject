@@ -1,4 +1,5 @@
 extends CanvasLayer
+class_name MobileHUD
 
 signal action_requested(action: String)
 signal inventory_requested()
