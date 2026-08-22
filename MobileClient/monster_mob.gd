@@ -80,24 +80,24 @@ func _build_visual() -> void:
     add_child(target_ring)
 
     var bar_root := Control.new()
-    bar_root.position = Vector2(-78, -116)
-    bar_root.custom_minimum_size = Vector2(156, 42)
+    bar_root.position = Vector2(-170, -240)
+    bar_root.custom_minimum_size = Vector2(340, 90)
     bar_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
     add_child(bar_root)
     health_bar = ProgressBar.new()
     health_bar.max_value = max_hp
     health_bar.value = hp
     health_bar.show_percentage = false
-    health_bar.custom_minimum_size = Vector2(156, 17)
+    health_bar.custom_minimum_size = Vector2(340, 34)
     health_bar.add_theme_stylebox_override("background", _bar_style(Color("#2a1520")))
     health_bar.add_theme_stylebox_override("fill", _bar_style(Color("#d94f5c")))
     bar_root.add_child(health_bar)
     health_label = Label.new()
     health_label.text = monster_name
     health_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    health_label.position = Vector2(0, -25)
-    health_label.size = Vector2(156, 24)
-    health_label.add_theme_font_size_override("font_size", 12)
+    health_label.position = Vector2(0, -46)
+    health_label.size = Vector2(340, 44)
+    health_label.add_theme_font_size_override("font_size", 26)
     health_label.add_theme_color_override("font_color", Color("#f3d6a2"))
     bar_root.add_child(health_label)
 

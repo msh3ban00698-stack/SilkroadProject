@@ -9,6 +9,7 @@ func set_player_position(position: Vector3) -> void:
     queue_redraw()
 
 func _draw() -> void:
+    var scale_factor := size.x / 232.0
     var r := Rect2(Vector2(8, 8), size - Vector2(16, 16))
     draw_style_box(_box(Color(0.03, 0.06, 0.13, 0.88), Color(0.38, 0.62, 0.88, 0.8), 14), r)
     var inner := r.grow(-12)
@@ -20,11 +21,11 @@ func _draw() -> void:
         draw_line(Vector2(inner.position.x, y), Vector2(inner.end.x, y), Color(0.35, 0.62, 0.55, 0.22), 1.0)
     for landmark in landmarks:
         var p := Vector2(lerpf(inner.position.x, inner.end.x, landmark.x), lerpf(inner.position.y, inner.end.y, landmark.y))
-        draw_circle(p, 5.0, Color("#f2c66d"))
+        draw_circle(p, 5.0 * scale_factor, Color("#f2c66d"))
     var player_uv := Vector2(0.5 + clamp(player_position.x / 80.0, -0.38, 0.38), 0.5 + clamp(player_position.z / 80.0, -0.38, 0.38))
     var player_p := Vector2(lerpf(inner.position.x, inner.end.x, player_uv.x), lerpf(inner.position.y, inner.end.y, player_uv.y))
-    draw_circle(player_p, 8.0, Color("#68d7ff"))
-    draw_circle(player_p, 13.0, Color(0.41, 0.84, 1.0, 0.22))
+    draw_circle(player_p, 8.0 * scale_factor, Color("#68d7ff"))
+    draw_circle(player_p, 13.0 * scale_factor, Color(0.41, 0.84, 1.0, 0.22))
 
 func _box(fill: Color, border: Color, radius: int) -> StyleBoxFlat:
     var box := StyleBoxFlat.new()

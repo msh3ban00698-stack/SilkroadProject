@@ -23,7 +23,7 @@ static func spawn_weapon_slash(parent: Node3D, origin: Vector3, facing: float) -
     _add_flash_light(effect, Color("#ffd98a"), 5.0, 4.5, 0.42)
     _finish_after(effect, 0.52)
 
-static func spawn_magic_projectile(parent: Node3D, origin: Vector3, target: Vector3) -> void:
+static func spawn_magic_projectile(parent: Node3D, origin: Vector3, target: Vector3, on_hit: Callable = Callable()) -> void:
     var effect := Node3D.new()
     effect.name = "CelestialCastProjectile"
     effect.position = origin
@@ -59,6 +59,8 @@ static func spawn_magic_projectile(parent: Node3D, origin: Vector3, target: Vect
     tween.finished.connect(func():
         _spawn_ring_burst(parent, target + Vector3(0, 0.35, 0), Color("#75e5ff"), 3, 1.55)
         FloatingDamage.spawn_hit_effect(parent, target + Vector3(0, 1.0, 0))
+        if on_hit.is_valid():
+            on_hit.call()
         effect.queue_free()
     )
 

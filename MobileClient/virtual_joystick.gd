@@ -1,8 +1,8 @@
 class_name VirtualJoystick
 extends Control
 
-@export var radius := 92.0
-@export var knob_radius := 34.0
+@export var radius := 140.0
+@export var knob_radius := 52.0
 var finger_id := -1
 var value := Vector2.ZERO
 var base_center := Vector2.ZERO

@@ -1,9 +1,17 @@
 extends Control
 
+const UI_SCALE := 2.5
+
 var label: Label
 var sublabel: Label
 var loading := false
 var preloads: Array[String] = []
+
+func _fs(points: int) -> int:
+    return int(round(float(points) * UI_SCALE))
+
+func _px(points: float) -> float:
+    return points * UI_SCALE
 
 func _ready() -> void:
     set_process(false)
@@ -21,39 +29,39 @@ func _build_ui() -> void:
     add_child(center)
 
     var panel := PanelContainer.new()
-    panel.custom_minimum_size = Vector2(720, 300)
+    panel.custom_minimum_size = Vector2(_px(720), _px(300))
     panel.add_theme_stylebox_override("panel", _panel_style())
     center.add_child(panel)
 
     var margin := MarginContainer.new()
-    margin.add_theme_constant_override("margin_left", 48)
-    margin.add_theme_constant_override("margin_right", 48)
-    margin.add_theme_constant_override("margin_top", 36)
-    margin.add_theme_constant_override("margin_bottom", 36)
+    margin.add_theme_constant_override("margin_left", _px(48))
+    margin.add_theme_constant_override("margin_right", _px(48))
+    margin.add_theme_constant_override("margin_top", _px(36))
+    margin.add_theme_constant_override("margin_bottom", _px(36))
     panel.add_child(margin)
 
     var content := VBoxContainer.new()
-    content.add_theme_constant_override("separation", 16)
+    content.add_theme_constant_override("separation", _px(16))
     margin.add_child(content)
 
     var title := Label.new()
     title.text = "SILKROAD MOBILE"
     title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    title.add_theme_font_size_override("font_size", 38)
+    title.add_theme_font_size_override("font_size", _fs(38))
     title.add_theme_color_override("font_color", Color("#f2c66d"))
     content.add_child(title)
 
     label = Label.new()
     label.text = "Awakening the Jangan frontier..."
     label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    label.add_theme_font_size_override("font_size", 20)
+    label.add_theme_font_size_override("font_size", _fs(20))
     label.add_theme_color_override("font_color", Color("#c8d3e8"))
     content.add_child(label)
 
     sublabel = Label.new()
     sublabel.text = "Loading models and world data"
     sublabel.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-    sublabel.add_theme_font_size_override("font_size", 14)
+    sublabel.add_theme_font_size_override("font_size", _fs(14))
     sublabel.add_theme_color_override("font_color", Color("#71809c"))
     content.add_child(sublabel)
 
@@ -62,7 +70,7 @@ func _build_ui() -> void:
     progress.max_value = 1.0
     progress.value = 0.0
     progress.show_percentage = false
-    progress.custom_minimum_size = Vector2(0, 18)
+    progress.custom_minimum_size = Vector2(0, _px(18))
     progress.add_theme_stylebox_override("background", _bar_style(Color("#101827")))
     progress.add_theme_stylebox_override("fill", _bar_style(Color("#9e793f")))
     content.add_child(progress)

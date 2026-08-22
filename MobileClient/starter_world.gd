@@ -18,6 +18,10 @@ var offline_level := 1
 var offline_gold := 0
 var offline_kills := 0
 var offline_time := 0.0
+var _melee_chase_tween: Tween
+var _auto_acquire_cd := 0.0
+var _wizard_range := 16.0
+var _spear_range := 4.6
 
 func _ready() -> void:
     _build_environment()
@@ -76,6 +80,10 @@ func _process(delta: float) -> void:
     if offline_mode:
         offline_time += delta
         _simulate_offline(delta)
+        _auto_acquire_cd = max(0.0, _auto_acquire_cd - delta)
+        if _auto_acquire_cd <= 0.0 and (selected_target_id == 0 or not monsters.has(selected_target_id) or monsters[selected_target_id].defeated):
+            _acquire_nearest_target()
+            _auto_acquire_cd = 0.25
     if skill_system:
         skill_system.tick(delta)
     if player and protocol and not offline_mode and movement_cooldown <= 0.0 and player.velocity.length() > 0.2:
@@ -729,30 +737,92 @@ func _on_target_info_received(target: Dictionary) -> void:
         monster.set_hp(int(target.hp), int(target.max_hp))
         hud.set_target(monster.monster_name, monster.hp, monster.max_hp)
 
+func _acquire_nearest_target(max_range: float = -1.0) -> void:
+    if not player:
+        return
+    var style := player.get_attack_style()
+    var effective_range := _wizard_range if style == "wizard" else _spear_range
+    if max_range > 0.0:
+        effective_range = max_range
+    var best_uid := 0
+    var best_distance := effective_range + 0.01
+    for uid in monsters.keys():
+        var monster: MonsterMob = monsters[uid]
+        if not is_instance_valid(monster) or monster.defeated:
+            continue
+        var distance := player.global_position.distance_to(monster.global_position)
+        if distance < best_distance:
+            best_distance = distance
+            best_uid = int(uid)
+    if best_uid != 0:
+        _on_monster_targeted(best_uid)
+
+func _face_target(target_position: Vector3) -> void:
+    if not player:
+        return
+    var to_target := target_position - player.global_position
+    to_target.y = 0.0
+    if to_target.length() > 0.05:
+        player.yaw = atan2(to_target.x, to_target.z)
+        player.rotation.y = player.yaw
+
+func _start_melee_chase(target_uid: int) -> void:
+    if not monsters.has(target_uid):
+        return
+    var monster: MonsterMob = monsters[target_uid]
+    if not is_instance_valid(monster):
+        return
+    if _melee_chase_tween:
+        _melee_chase_tween.kill()
+    _face_target(monster.global_position)
+    var destination := player.global_position + (monster.global_position - player.global_position).normalized() * (_spear_range - 1.4)
+    destination.y = player.global_position.y
+    var distance := player.global_position.distance_to(destination)
+    _melee_chase_tween = create_tween()
+    _melee_chase_tween.tween_property(player, "global_position", destination, max(0.18, distance / player.move_speed))
+    _melee_chase_tween.finished.connect(func():
+        _melee_chase_tween = null
+        if monsters.has(target_uid):
+            var chased: MonsterMob = monsters[target_uid]
+            if is_instance_valid(chased) and not chased.defeated and selected_target_id == target_uid:
+                _apply_local_demo_attack()
+    )
+
 func _on_action(action: String) -> void:
     if hud:
         hud.set_status("Action: %s" % action.to_upper())
     if action == "attack":
+        var style := player.get_attack_style()
+        if selected_target_id == 0 or not monsters.has(selected_target_id) or monsters[selected_target_id].defeated:
+            _acquire_nearest_target()
         if selected_target_id == 0:
-            hud.set_status("Select a Mangyang first")
+            hud.set_status("No Mangyang in range")
             return
         var target_position := player.global_position + Vector3(0, 0, -2.0)
         if monsters.has(selected_target_id):
             target_position = monsters[selected_target_id].global_position
+        _face_target(target_position)
         player.play_attack()
-        if player.get_attack_style() == "wizard":
-            CombatVFX.spawn_magic_projectile(self, player.get_attack_origin(), target_position)
+        var target: MonsterMob = monsters.get(selected_target_id)
+        var distance_to_target := player.global_position.distance_to(target_position)
+        if style == "wizard":
+            CombatVFX.spawn_magic_projectile(self, player.get_attack_origin(), target_position, func():
+                if monsters.has(selected_target_id) and monsters[selected_target_id].local_demo:
+                    _apply_local_demo_attack()
+            )
             hud.set_status("Arcane bolt cast — ranged magic attack")
         else:
-            CombatVFX.spawn_weapon_slash(self, player.global_position, player.rotation.y)
-            hud.set_status("Spear stance — close-range physical attack")
-        if selected_target_id == 0:
-            hud.set_status("Select a Mangyang first")
-            return
+            if distance_to_target <= _spear_range:
+                CombatVFX.spawn_weapon_slash(self, player.global_position + Vector3(0, 0, -1.2), player.rotation.y)
+                hud.set_status("Spear thrust — close-range physical attack")
+            else:
+                _start_melee_chase(selected_target_id)
+                hud.set_status("Charging the Mangyang...")
         if protocol and not offline_mode:
             protocol.attack_target(selected_target_id)
-        if monsters.has(selected_target_id) and monsters[selected_target_id].local_demo:
-            _apply_local_demo_attack()
+        if monsters.has(selected_target_id) and monsters[selected_target_id].local_demo and style == "spear":
+            if distance_to_target <= _spear_range:
+                _apply_local_demo_attack()
     elif action == "skill":
         if skill_tree_ui:
             skill_tree_ui.open_for_build()
@@ -799,10 +869,13 @@ func _apply_local_demo_attack() -> void:
     if not monsters.has(selected_target_id):
         return
     var monster: MonsterMob = monsters[selected_target_id]
+    if not is_instance_valid(monster) or monster.defeated:
+        _acquire_nearest_target()
+        if selected_target_id == 0:
+            return
+        monster = monsters[selected_target_id]
+    _face_target(monster.global_position)
     var style := player.get_attack_style()
-    if style == "spear" and player.global_position.distance_to(monster.global_position) > 4.2:
-        hud.set_status("Spear attack out of range — move closer")
-        return
     var damage := randi_range(28, 46) if style == "wizard" else randi_range(18, 32)
     monster.apply_damage(damage)
     _show_damage(monster, damage)

@@ -4,6 +4,8 @@ class_name MobileHUD
 signal action_requested(action: String)
 signal inventory_requested()
 
+const UI_SCALE := 2.5
+
 var hp_bar: ProgressBar
 var mp_bar: ProgressBar
 var exp_bar: ProgressBar
@@ -28,6 +30,12 @@ func _ready() -> void:
     layer = 20
     _build_hud()
 
+func _fs(points: int) -> int:
+    return int(round(float(points) * UI_SCALE))
+
+func _px(points: float) -> float:
+    return points * UI_SCALE
+
 func _build_hud() -> void:
     var root := Control.new()
     root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -35,23 +43,23 @@ func _build_hud() -> void:
 
     var crest := PanelContainer.new()
     crest.set_anchors_preset(Control.PRESET_TOP_LEFT)
-    crest.position = Vector2(20, 18)
-    crest.custom_minimum_size = Vector2(342, 150)
+    crest.position = Vector2(_px(20), _px(18))
+    crest.custom_minimum_size = Vector2(_px(342), _px(150))
     crest.add_theme_stylebox_override("panel", _panel_style(Color("#111725cc"), GOLD, 18, 2))
     root.add_child(crest)
     var top := VBoxContainer.new()
-    top.add_theme_constant_override("separation", 5)
+    top.add_theme_constant_override("separation", _px(5))
     crest.add_child(top)
     var title := Label.new()
     title.text = "✦  CELESTIAL REALM"
-    title.add_theme_font_size_override("font_size", 21)
+    title.add_theme_font_size_override("font_size", _fs(21))
     title.add_theme_color_override("font_color", PALE_GOLD)
     title.add_theme_color_override("font_outline_color", Color("#050816"))
-    title.add_theme_constant_override("outline_size", 7)
+    title.add_theme_constant_override("outline_size", _px(7))
     top.add_child(title)
     var subtitle := Label.new()
     subtitle.text = "ASTRAL OUTPOST  •  SANCTUM GATE"
-    subtitle.add_theme_font_size_override("font_size", 10)
+    subtitle.add_theme_font_size_override("font_size", _fs(10))
     subtitle.add_theme_color_override("font_color", Color("#8fa6c7"))
     top.add_child(subtitle)
     hp_bar = _bar(top, Color("#9d4255"), "HP")
@@ -61,52 +69,52 @@ func _build_hud() -> void:
     mp_label = _bar_label("MP  100 / 100")
     mp_bar.add_child(mp_label)
     exp_bar = _bar(top, Color("#a87a37"), "EXP")
-    exp_bar.custom_minimum_size = Vector2(300, 17)
+    exp_bar.custom_minimum_size = Vector2(_px(300), _px(17))
     exp_label = _bar_label("LV 1  •  EXP 0 / 100")
-    exp_label.add_theme_font_size_override("font_size", 10)
+    exp_label.add_theme_font_size_override("font_size", _fs(10))
     exp_bar.add_child(exp_label)
 
     offline_badge = Label.new()
     offline_badge.text = "◈  LOCAL REALM"
     offline_badge.visible = false
     offline_badge.set_anchors_preset(Control.PRESET_TOP_LEFT)
-    offline_badge.position = Vector2(34, 178)
-    offline_badge.add_theme_font_size_override("font_size", 12)
+    offline_badge.position = Vector2(_px(34), _px(178))
+    offline_badge.add_theme_font_size_override("font_size", _fs(12))
     offline_badge.add_theme_color_override("font_color", GOLD)
     root.add_child(offline_badge)
     _build_target_panel(root)
 
     minimap = MinimapView.new()
     minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-    minimap.position = Vector2(-8, 18)
+    minimap.position = Vector2(_px(-8), _px(18))
     minimap.anchor_left = 1.0
     minimap.anchor_right = 1.0
-    minimap.offset_left = -250
-    minimap.offset_right = -18
-    minimap.custom_minimum_size = Vector2(232, 232)
+    minimap.offset_left = -_px(250)
+    minimap.offset_right = -_px(18)
+    minimap.custom_minimum_size = Vector2(_px(232), _px(232))
     root.add_child(minimap)
 
     joystick = VirtualJoystick.new()
     joystick.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-    joystick.position = Vector2(22, -198)
+    joystick.position = Vector2(_px(22), -_px(198))
     joystick.anchor_top = 1.0
     joystick.anchor_bottom = 1.0
-    joystick.custom_minimum_size = Vector2(250, 250)
+    joystick.custom_minimum_size = Vector2(_px(250), _px(250))
     root.add_child(joystick)
 
     var actions_panel := PanelContainer.new()
     actions_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-    actions_panel.position = Vector2(-520, -190)
+    actions_panel.position = Vector2(-_px(520), -_px(190))
     actions_panel.anchor_left = 1.0
     actions_panel.anchor_right = 1.0
     actions_panel.anchor_top = 1.0
     actions_panel.anchor_bottom = 1.0
-    actions_panel.custom_minimum_size = Vector2(500, 112)
+    actions_panel.custom_minimum_size = Vector2(_px(500), _px(112))
     actions_panel.add_theme_stylebox_override("panel", _panel_style(Color("#101523b8"), EDGE, 18, 2))
     root.add_child(actions_panel)
     var actions := HBoxContainer.new()
     actions.alignment = BoxContainer.ALIGNMENT_CENTER
-    actions.add_theme_constant_override("separation", 10)
+    actions.add_theme_constant_override("separation", _px(10))
     actions_panel.add_child(actions)
     _action_button(actions, "✧\nSTRIKE", "attack", Color("#74384b"))
     _action_button(actions, "✚\nELIXIR", "potion", Color("#2e685e"))
@@ -116,36 +124,36 @@ func _build_hud() -> void:
 
     status_label = Label.new()
     status_label.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-    status_label.position = Vector2(28, -76)
+    status_label.position = Vector2(_px(28), -_px(76))
     status_label.anchor_top = 1.0
     status_label.anchor_bottom = 1.0
     status_label.add_theme_color_override("font_color", Color("#e7c778"))
     status_label.add_theme_color_override("font_outline_color", Color("#070b15"))
-    status_label.add_theme_constant_override("outline_size", 6)
-    status_label.add_theme_font_size_override("font_size", 15)
+    status_label.add_theme_constant_override("outline_size", _px(6))
+    status_label.add_theme_font_size_override("font_size", _fs(15))
     root.add_child(status_label)
 
 func _build_target_panel(root: Control) -> void:
     target_panel = VBoxContainer.new()
     target_panel.set_anchors_preset(Control.PRESET_TOP_WIDE)
-    target_panel.position = Vector2(0, 24)
+    target_panel.position = Vector2(0, _px(24))
     target_panel.anchor_left = 0.5
     target_panel.anchor_right = 0.5
-    target_panel.offset_left = -170
-    target_panel.offset_right = 170
-    target_panel.add_theme_constant_override("separation", 5)
+    target_panel.offset_left = -_px(170)
+    target_panel.offset_right = _px(170)
+    target_panel.add_theme_constant_override("separation", _px(5))
     root.add_child(target_panel)
     target_label = Label.new()
     target_label.text = "—  NO TARGET  —"
     target_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     target_label.add_theme_color_override("font_color", PALE_GOLD)
-    target_label.add_theme_font_size_override("font_size", 16)
+    target_label.add_theme_font_size_override("font_size", _fs(16))
     target_panel.add_child(target_label)
     target_bar = ProgressBar.new()
     target_bar.max_value = 100
     target_bar.value = 0
     target_bar.show_percentage = false
-    target_bar.custom_minimum_size = Vector2(300, 22)
+    target_bar.custom_minimum_size = Vector2(_px(300), _px(22))
     target_bar.add_theme_stylebox_override("background", _bar_style(Color("#171524"), EDGE, 10))
     target_bar.add_theme_stylebox_override("fill", _bar_style(Color("#9d4255"), PALE_GOLD, 10))
     target_panel.add_child(target_bar)
@@ -155,22 +163,22 @@ func _panel_style(fill: Color, border: Color, radius: int, width: int) -> StyleB
     style.bg_color = fill
     style.border_color = border
     style.set_border_width_all(width)
-    style.set_corner_radius_all(radius)
+    style.set_corner_radius_all(int(_px(radius)))
     style.shadow_color = Color(0, 0, 0, 0.42)
-    style.shadow_size = 8
+    style.shadow_size = int(_px(8))
     return style
 
 func _bar_style(color: Color, border: Color, radius: int) -> StyleBoxFlat:
     var style := _panel_style(color, border, radius, 1)
-    style.content_margin_left = 10
-    style.content_margin_right = 10
+    style.content_margin_left = _px(10)
+    style.content_margin_right = _px(10)
     return style
 
 func _bar(parent: VBoxContainer, color: Color, _label: String) -> ProgressBar:
     var bar := ProgressBar.new()
     bar.max_value = 100
     bar.value = 100
-    bar.custom_minimum_size = Vector2(300, 24)
+    bar.custom_minimum_size = Vector2(_px(300), _px(24))
     bar.show_percentage = false
     bar.add_theme_stylebox_override("background", _bar_style(DEEP_STONE, EDGE, 7))
     bar.add_theme_stylebox_override("fill", _bar_style(color, GOLD, 7))
@@ -181,8 +189,8 @@ func _bar_label(text_value: String) -> Label:
     var label := Label.new()
     label.text = text_value
     label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-    label.position = Vector2(12, 0)
-    label.add_theme_font_size_override("font_size", 12)
+    label.position = Vector2(_px(12), 0)
+    label.add_theme_font_size_override("font_size", _fs(12))
     label.add_theme_color_override("font_color", PALE_GOLD)
     label.mouse_filter = Control.MOUSE_FILTER_IGNORE
     return label
@@ -190,8 +198,8 @@ func _bar_label(text_value: String) -> Label:
 func _action_button(parent: HBoxContainer, text_value: String, action: String, color: Color) -> void:
     var button := Button.new()
     button.text = text_value
-    button.custom_minimum_size = Vector2(88, 88)
-    button.add_theme_font_size_override("font_size", 11)
+    button.custom_minimum_size = Vector2(_px(88), _px(88))
+    button.add_theme_font_size_override("font_size", _fs(11))
     var normal := _panel_style(color, GOLD, 16, 2)
     var hover := normal.duplicate()
     hover.bg_color = color.lightened(0.16)
